@@ -4,7 +4,7 @@ import { AuthDto } from './dto/auth.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { Request } from 'express';
 
-interface JwtUser {
+export interface JwtUser {
   userId: string;
   email: string;
 }

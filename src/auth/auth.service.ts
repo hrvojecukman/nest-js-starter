@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  ConflictException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable, ConflictException, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
@@ -67,8 +63,7 @@ export class AuthService {
 
   async refreshToken(userId: string, refreshToken: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user || !user.refreshToken)
-      throw new UnauthorizedException('Access Denied');
+    if (!user || !user.refreshToken) throw new UnauthorizedException('Access Denied');
 
     const isValid = await argon2.verify(user.refreshToken, refreshToken);
     if (!isValid) throw new UnauthorizedException('Invalid refresh token');
