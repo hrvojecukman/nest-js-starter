@@ -8,10 +8,11 @@ datasource db {
 }
 
 model User {
-  id        String  @id @default(uuid())
-  name      String
-  email     String  @unique
-  password  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  password     String
+  refreshToken String? // Nullable because it's only set when a user logs in
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
