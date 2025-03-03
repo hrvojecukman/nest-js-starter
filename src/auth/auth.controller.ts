@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
 import { Body, Controller, Post, UseGuards, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthDto } from './dto/auth.dto';
@@ -33,10 +32,7 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Post('refresh')
-  async refreshToken(
-    @Body() { refreshToken }: { refreshToken: string },
-    @Req() req: Request,
-  ) {
+  async refreshToken(@Body() { refreshToken }: { refreshToken: string }, @Req() req: Request) {
     const user = req.user as JwtUser;
     return this.authService.refreshToken(user.userId, refreshToken);
   }
