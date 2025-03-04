@@ -1,6 +1,14 @@
-import { Body, Controller, Post, UseGuards, Req } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Post,
+  UseGuards,
+  Req,
+  Headers,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { AuthDto } from './dto/auth.dto';
+import { AuthDto, Role } from './dto/auth.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { Request } from 'express';
 
@@ -14,8 +22,15 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Post('register')
-  async register(@Body() dto: AuthDto) {
-    return this.authService.register(dto);
+  async register(@Body() dto: AuthDto, @Headers('admin-secret') adminSecret?: string) {
+    if (
+      dto.role === Role.ADMIN &&
+      (!adminSecret || adminSecret !== process.env.ADMIN_CREATION_SECRET)
+    ) {
+      throw new UnauthorizedException('Invalid or missing admin secret key.');
+    }
+
+    return this.authService.register(dto, adminSecret);
   }
 
   @Post('login')
