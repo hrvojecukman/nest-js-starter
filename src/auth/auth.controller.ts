@@ -15,6 +15,7 @@ import { Request } from 'express';
 export interface JwtUser {
   userId: string;
   email: string;
+  role: Role;
 }
 
 @Controller('auth')

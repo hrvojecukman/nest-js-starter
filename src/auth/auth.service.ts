@@ -93,7 +93,7 @@ export class AuthService {
         throw new BadRequestException('Invalid role provided');
     }
 
-    return this.generateTokens(user.id, user.email);
+    return this.generateTokens(user.id, user.email, user.role as Role);
   }
 
   async login(dto: AuthDto) {
@@ -104,15 +104,14 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const tokens = await this.generateTokens(user.id, user.email);
+    const tokens = await this.generateTokens(user.id, user.email, user.role as Role);
     await this.updateRefreshToken(user.id, tokens.refreshToken);
 
     return tokens;
   }
-
-  private async generateTokens(userId: string, email: string) {
+  private async generateTokens(userId: string, email: string, role: Role) {
     const accessToken = await this.jwtService.signAsync(
-      { sub: userId, email },
+      { sub: userId, email, role },
       { secret: process.env.JWT_SECRET, expiresIn: '15m' },
     );
 
@@ -134,12 +133,17 @@ export class AuthService {
 
   async refreshToken(userId: string, refreshToken: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user || !user.refreshToken) throw new UnauthorizedException('Access Denied');
+
+    if (!user || !user.refreshToken) {
+      throw new UnauthorizedException('Access Denied');
+    }
 
     const isValid = await argon2.verify(user.refreshToken, refreshToken);
-    if (!isValid) throw new UnauthorizedException('Invalid refresh token');
+    if (!isValid) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
 
-    const tokens = await this.generateTokens(user.id, user.email);
+    const tokens = await this.generateTokens(user.id, user.email, user.role as Role);
     await this.updateRefreshToken(user.id, tokens.refreshToken);
 
     return tokens;
