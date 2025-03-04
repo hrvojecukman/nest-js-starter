@@ -7,12 +7,53 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  BUYER
+  DEVELOPER
+  OWNER
+  BROKER
+  ADMIN
+}
+
 model User {
   id           String   @id @default(uuid())
   name         String
   email        String   @unique
   password     String
-  refreshToken String? // Nullable because it's only set when a user logs in
+  role         Role     @default(BUYER)
+  refreshToken String? // Nullable, only set when a user logs in
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  Buyer     Buyer?
+  Developer Developer?
+  Owner     Owner?
+  Broker    Broker?
+}
+
+model Buyer {
+  id          String @id @default(uuid()) @map("user_id")
+  user        User   @relation(fields: [id], references: [id])
+  phoneNumber String
+}
+
+model Developer {
+  id           String  @id @default(uuid()) @map("user_id")
+  user         User    @relation(fields: [id], references: [id])
+  isLicensed   Boolean
+  hasWafi      Boolean
+  acceptsBanks Boolean
+}
+
+model Owner {
+  id          String  @id @default(uuid()) @map("user_id")
+  user        User    @relation(fields: [id], references: [id])
+  companyName String?
+}
+
+model Broker {
+  id            String  @id @default(uuid()) @map("user_id")
+  user          User    @relation(fields: [id], references: [id])
+  isLicensed    Boolean
+  licenseNumber String
 }
