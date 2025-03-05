@@ -18,10 +18,11 @@ enum Role {
 model User {
   id           String   @id @default(uuid())
   name         String
-  email        String   @unique
-  password     String
+  email        String?  @unique
+  phoneNumber  String   @unique
+  password     String?
   role         Role     @default(BUYER)
-  refreshToken String? // Nullable, only set when a user logs in
+  refreshToken String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -29,12 +30,13 @@ model User {
   Developer Developer?
   Owner     Owner?
   Broker    Broker?
+
+  @@index([phoneNumber])
 }
 
 model Buyer {
-  id          String @id @default(uuid()) @map("user_id")
-  user        User   @relation(fields: [id], references: [id])
-  phoneNumber String
+  id   String @id @default(uuid()) @map("user_id")
+  user User   @relation(fields: [id], references: [id])
 }
 
 model Developer {
