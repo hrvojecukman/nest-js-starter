@@ -6,6 +6,7 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { PrismaService } from '../prisma/prisma.service';
 import { PrismaModule } from 'src/prisma/prisma.module';
+import { TwilioModule } from '../twilio/twilio.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { PrismaModule } from 'src/prisma/prisma.module';
       signOptions: { expiresIn: '15m' },
     }),
     PrismaModule,
+    TwilioModule,
   ],
   providers: [AuthService, JwtStrategy, PrismaService],
   controllers: [AuthController],

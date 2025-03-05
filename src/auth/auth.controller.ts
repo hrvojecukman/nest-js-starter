@@ -8,13 +8,13 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { AuthDto, Role } from './dto/auth.dto';
+import { CompleteRegistrationDto, InitiateLoginDto, VerifyLoginOtpDto, Role } from './dto/auth.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { Request } from 'express';
 
 export interface JwtUser {
   userId: string;
-  email: string;
+  phoneNumber: string;
   role: Role;
 }
 
@@ -23,7 +23,10 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Post('register')
-  async register(@Body() dto: AuthDto, @Headers('admin-secret') adminSecret?: string) {
+  async register(
+    @Body() dto: CompleteRegistrationDto,
+    @Headers('admin-secret') adminSecret?: string,
+  ) {
     if (
       dto.role === Role.ADMIN &&
       (!adminSecret || adminSecret !== process.env.ADMIN_CREATION_SECRET)
@@ -34,9 +37,14 @@ export class AuthController {
     return this.authService.register(dto, adminSecret);
   }
 
+  @Post('initiate')
+  async initiateAuth(@Body() dto: InitiateLoginDto) {
+    return this.authService.initiateAuth(dto);
+  }
+
   @Post('login')
-  async login(@Body() dto: AuthDto) {
-    return this.authService.login(dto);
+  async login(@Body() dto: VerifyLoginOtpDto) {
+    return this.authService.verifyOtpAndLogin(dto);
   }
 
   @UseGuards(JwtAuthGuard)

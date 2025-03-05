@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 import {
   Injectable,
   BadRequestException,
@@ -7,25 +5,44 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-
 import * as argon2 from 'argon2';
-import { AuthDto, Role } from './dto/auth.dto';
+import { CompleteRegistrationDto, InitiateLoginDto, Role, VerifyLoginOtpDto } from './dto/auth.dto';
 import { JwtService } from '@nestjs/jwt';
+import { TwilioService } from '../twilio/twilio.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
+    private readonly twilioService: TwilioService,
   ) {}
 
-  async register(dto: AuthDto & { role: Role }, secretKey?: string) {
+  async register(dto: CompleteRegistrationDto, secretKey?: string) {
     const existingUser = await this.prisma.user.findUnique({
-      where: { email: dto.email },
+      where: {
+        phoneNumber: dto.phoneNumber,
+      },
     });
-    if (existingUser) throw new ConflictException('An account with this email already exists.');
 
-    const hashedPassword = await argon2.hash(dto.password);
+    if (existingUser) {
+      throw new ConflictException(
+        existingUser.phoneNumber === dto.phoneNumber
+          ? 'An account with this phone number already exists'
+          : 'An account with this email already exists',
+      );
+    }
+
+    // Verify OTP first
+    const isOtpValid = await this.twilioService.verifyOtp(dto.phoneNumber, dto.otpCode);
+    if (!isOtpValid) {
+      throw new UnauthorizedException('Invalid OTP');
+    }
+
+    let hashedPassword: string | null = null;
+    if (dto.password) {
+      hashedPassword = await argon2.hash(dto.password);
+    }
 
     if (dto.role === Role.ADMIN) {
       if (!secretKey || secretKey !== process.env.ADMIN_CREATION_SECRET) {
@@ -35,19 +52,16 @@ export class AuthService {
 
     const user = await this.prisma.user.create({
       data: {
-        email: dto.email,
-        password: hashedPassword,
+        phoneNumber: dto.phoneNumber,
         name: dto.name,
         role: dto.role,
+        password: hashedPassword,
       },
     });
 
     switch (dto.role) {
       case Role.BUYER:
-        if (!dto.phoneNumber) {
-          throw new BadRequestException('Phone number is required for Buyer');
-        }
-        await this.prisma.buyer.create({ data: { id: user.id, phoneNumber: dto.phoneNumber } });
+        await this.prisma.buyer.create({ data: { id: user.id } });
         break;
 
       case Role.DEVELOPER:
@@ -93,25 +107,75 @@ export class AuthService {
         throw new BadRequestException('Invalid role provided');
     }
 
-    return this.generateTokens(user.id, user.email, user.role as Role);
+    return this.generateTokens(user.id, user.phoneNumber as string, user.role as Role);
   }
 
-  async login(dto: AuthDto) {
+  async initiateAuth(dto: InitiateLoginDto) {
     const user = await this.prisma.user.findUnique({
-      where: { email: dto.email },
+      where: { phoneNumber: dto.phoneNumber },
     });
-    if (!user || !(await argon2.verify(user.password, dto.password))) {
+
+    // If password is provided and user exists, try password login
+    if (dto.password && user) {
+      if (!user.password) {
+        throw new BadRequestException('This account requires OTP authentication');
+      }
+      if (await argon2.verify(user.password, dto.password)) {
+        const tokens = await this.generateTokens(
+          user.id,
+          user.phoneNumber as string,
+          user.role as Role,
+        );
+        await this.updateRefreshToken(user.id, tokens.refreshToken);
+        return {
+          status: 'LOGGED_IN',
+          tokens,
+        };
+      }
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const tokens = await this.generateTokens(user.id, user.email, user.role as Role);
+    // Send OTP
+    await this.twilioService.sendOtp(dto.phoneNumber);
+
+    // Return appropriate status based on whether user exists
+    return {
+      status: user ? 'LOGIN_OTP_SENT' : 'REGISTRATION_OTP_SENT',
+      phoneNumber: dto.phoneNumber,
+    };
+  }
+
+  async verifyOtpAndLogin(dto: VerifyLoginOtpDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { phoneNumber: dto.phoneNumber },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    const isOtpValid = await this.twilioService.verifyOtp(dto.phoneNumber, dto.otpCode);
+    if (!isOtpValid) {
+      throw new UnauthorizedException('Invalid OTP');
+    }
+
+    const tokens = await this.generateTokens(
+      user.id,
+      user.phoneNumber as string,
+      user.role as Role,
+    );
     await this.updateRefreshToken(user.id, tokens.refreshToken);
 
-    return tokens;
+    return { tokens };
   }
-  private async generateTokens(userId: string, email: string, role: Role) {
+
+  async login(dto: InitiateLoginDto) {
+    return this.initiateAuth(dto);
+  }
+
+  private async generateTokens(userId: string, phoneNumber: string, role: Role) {
     const accessToken = await this.jwtService.signAsync(
-      { sub: userId, email, role },
+      { sub: userId, phoneNumber, role },
       { secret: process.env.JWT_SECRET, expiresIn: '15m' },
     );
 
@@ -143,7 +207,11 @@ export class AuthService {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
-    const tokens = await this.generateTokens(user.id, user.email, user.role as Role);
+    const tokens = await this.generateTokens(
+      user.id,
+      user.phoneNumber as string,
+      user.role as Role,
+    );
     await this.updateRefreshToken(user.id, tokens.refreshToken);
 
     return tokens;

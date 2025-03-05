@@ -1,4 +1,4 @@
-import { IsEmail, IsEnum, IsOptional, IsString, IsBoolean } from 'class-validator';
+import { IsEmail, IsEnum, IsOptional, IsString, IsBoolean, Matches } from 'class-validator';
 
 export enum Role {
   BUYER = 'BUYER',
@@ -8,12 +8,23 @@ export enum Role {
   ADMIN = 'ADMIN',
 }
 
-export class AuthDto {
+export class InitiateRegistrationDto {
   @IsEmail()
   email: string;
 
+  @Matches(/^\+[1-9]\d{1,14}$/, {
+    message: 'Phone number must be in E.164 format (e.g., +14155552671)',
+  })
+  phoneNumber: string;
+
+  @IsEnum(Role)
+  role!: Role;
+}
+
+export class CompleteRegistrationDto {
+  @IsOptional()
   @IsString()
-  password: string;
+  password?: string;
 
   @IsString()
   name: string;
@@ -21,12 +32,15 @@ export class AuthDto {
   @IsEnum(Role)
   role!: Role;
 
-  // Buyer Fields
-  @IsOptional()
-  @IsString()
-  phoneNumber?: string;
+  @Matches(/^\+[1-9]\d{1,14}$/, {
+    message: 'Phone number must be in E.164 format (e.g., +14155552671)',
+  })
+  phoneNumber: string;
 
-  // Developer Fields
+  @IsString()
+  otpCode: string;
+
+  // Role-specific fields
   @IsOptional()
   @IsBoolean()
   isLicensed?: boolean;
@@ -39,7 +53,6 @@ export class AuthDto {
   @IsBoolean()
   acceptsBanks?: boolean;
 
-  // Owner Fields
   @IsOptional()
   @IsString()
   companyName?: string;
@@ -47,4 +60,25 @@ export class AuthDto {
   @IsOptional()
   @IsString()
   licenseNumber?: string;
+}
+
+export class InitiateLoginDto {
+  @IsOptional()
+  @IsString()
+  password?: string;
+
+  @Matches(/^\+[1-9]\d{1,14}$/, {
+    message: 'Phone number must be in E.164 format (e.g., +14155552671)',
+  })
+  phoneNumber: string;
+}
+
+export class VerifyLoginOtpDto {
+  @Matches(/^\+[1-9]\d{1,14}$/, {
+    message: 'Phone number must be in E.164 format (e.g., +14155552671)',
+  })
+  phoneNumber: string;
+
+  @IsString()
+  otpCode: string;
 }
