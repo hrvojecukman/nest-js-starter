@@ -1,14 +1,14 @@
-import {
-  Body,
-  Controller,
-  Post,
-  UseGuards,
-  Req,
-  Headers,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Body, Controller, Post, UseGuards, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { CompleteRegistrationDto, InitiateLoginDto, VerifyLoginOtpDto, Role } from './dto/auth.dto';
+import {
+  InitiateLoginDto,
+  VerifyLoginOtpDto,
+  OwnerDetailsDto,
+  DeveloperDetailsDto,
+  BrokerDetailsDto,
+  Role,
+  BuyerDetailsDto,
+} from './dto/auth.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { Request } from 'express';
 
@@ -22,42 +22,54 @@ export interface JwtUser {
 export class AuthController {
   constructor(private authService: AuthService) {}
 
-  @Post('register')
-  async register(
-    @Body() dto: CompleteRegistrationDto,
-    @Headers('admin-secret') adminSecret?: string,
-  ) {
-    if (
-      dto.role === Role.ADMIN &&
-      (!adminSecret || adminSecret !== process.env.ADMIN_CREATION_SECRET)
-    ) {
-      throw new UnauthorizedException('Invalid or missing admin secret key.');
-    }
-
-    return this.authService.register(dto, adminSecret);
-  }
-
   @Post('initiate')
   async initiateAuth(@Body() dto: InitiateLoginDto) {
     return this.authService.initiateAuth(dto);
   }
 
-  @Post('login')
-  async login(@Body() dto: VerifyLoginOtpDto) {
+  @Post('verify-otp')
+  async verifyOtp(@Body() dto: VerifyLoginOtpDto) {
     return this.authService.verifyOtpAndLogin(dto);
   }
 
   @UseGuards(JwtAuthGuard)
   @Post('logout')
-  async logout(@Req() req: Request) {
-    const user = req.user as JwtUser;
-    return this.authService.logout(user.userId);
+  logout() {
+    return this.authService.logout();
   }
 
   @UseGuards(JwtAuthGuard)
   @Post('refresh')
-  async refreshToken(@Body() { refreshToken }: { refreshToken: string }, @Req() req: Request) {
+  async refreshToken(@Req() req: Request) {
     const user = req.user as JwtUser;
-    return this.authService.refreshToken(user.userId, refreshToken);
+    return this.authService.refreshToken(user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('role-details/buyer')
+  async updateBuyerDetails(@Body() dto: BuyerDetailsDto, @Req() req: Request) {
+    const user = req.user as JwtUser;
+    return this.authService.updateRoleDetails(user.userId, dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('role-details/owner')
+  async updateOwnerDetails(@Body() dto: OwnerDetailsDto, @Req() req: Request) {
+    const user = req.user as JwtUser;
+    return this.authService.updateRoleDetails(user.userId, dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('role-details/developer')
+  async updateDeveloperDetails(@Body() dto: DeveloperDetailsDto, @Req() req: Request) {
+    const user = req.user as JwtUser;
+    return this.authService.updateRoleDetails(user.userId, dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('role-details/broker')
+  async updateBrokerDetails(@Body() dto: BrokerDetailsDto, @Req() req: Request) {
+    const user = req.user as JwtUser;
+    return this.authService.updateRoleDetails(user.userId, dto);
   }
 }
