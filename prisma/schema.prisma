@@ -16,15 +16,12 @@ enum Role {
 }
 
 model User {
-  id           String   @id @default(uuid())
-  name         String
-  email        String?  @unique
-  phoneNumber  String   @unique
-  password     String?
-  role         Role     @default(BUYER)
-  refreshToken String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id          String   @id @default(uuid())
+  email       String?  @unique
+  phoneNumber String   @unique
+  role        Role     @default(BUYER)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   Buyer     Buyer?
   Developer Developer?
@@ -35,8 +32,10 @@ model User {
 }
 
 model Buyer {
-  id   String @id @default(uuid()) @map("user_id")
-  user User   @relation(fields: [id], references: [id])
+  id       String  @id @default(uuid()) @map("user_id")
+  name     String?
+  lastName String?
+  user     User    @relation(fields: [id], references: [id])
 }
 
 model Developer {
