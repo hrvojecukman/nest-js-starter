@@ -46,28 +46,28 @@ export class AuthController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Post('role-details/buyer')
+  @Post('complete-registration/buyer')
   async updateBuyerDetails(@Body() dto: BuyerDetailsDto, @Req() req: Request) {
     const user = req.user as JwtUser;
     return this.authService.updateRoleDetails(user.userId, dto);
   }
 
   @UseGuards(JwtAuthGuard)
-  @Post('role-details/owner')
+  @Post('complete-registration/owner')
   async updateOwnerDetails(@Body() dto: OwnerDetailsDto, @Req() req: Request) {
     const user = req.user as JwtUser;
     return this.authService.updateRoleDetails(user.userId, dto);
   }
 
   @UseGuards(JwtAuthGuard)
-  @Post('role-details/developer')
+  @Post('complete-registration/developer')
   async updateDeveloperDetails(@Body() dto: DeveloperDetailsDto, @Req() req: Request) {
     const user = req.user as JwtUser;
     return this.authService.updateRoleDetails(user.userId, dto);
   }
 
   @UseGuards(JwtAuthGuard)
-  @Post('role-details/broker')
+  @Post('complete-registration/broker')
   async updateBrokerDetails(@Body() dto: BrokerDetailsDto, @Req() req: Request) {
     const user = req.user as JwtUser;
     return this.authService.updateRoleDetails(user.userId, dto);
