@@ -21,52 +21,7 @@ export class InitiateRegistrationDto {
   role!: Role;
 }
 
-export class CompleteRegistrationDto {
-  @IsOptional()
-  @IsString()
-  password?: string;
-
-  @IsString()
-  name: string;
-
-  @IsEnum(Role)
-  role!: Role;
-
-  @Matches(/^\+[1-9]\d{1,14}$/, {
-    message: 'Phone number must be in E.164 format (e.g., +14155552671)',
-  })
-  phoneNumber: string;
-
-  @IsString()
-  otpCode: string;
-
-  // Role-specific fields
-  @IsOptional()
-  @IsBoolean()
-  isLicensed?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
-  hasWafi?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
-  acceptsBanks?: boolean;
-
-  @IsOptional()
-  @IsString()
-  companyName?: string;
-
-  @IsOptional()
-  @IsString()
-  licenseNumber?: string;
-}
-
 export class InitiateLoginDto {
-  @IsOptional()
-  @IsString()
-  password?: string;
-
   @Matches(/^\+[1-9]\d{1,14}$/, {
     message: 'Phone number must be in E.164 format (e.g., +14155552671)',
   })
@@ -81,4 +36,60 @@ export class VerifyLoginOtpDto {
 
   @IsString()
   otpCode: string;
+
+  @IsOptional()
+  @IsEnum(Role)
+  role?: Role;
+}
+
+export class UpdateProfileDto {
+  @IsString()
+  name: string;
+
+  @IsString()
+  lastName: string;
+
+  @IsOptional()
+  @IsEnum(Role)
+  role?: Role;
+}
+
+export class BasicProfileDto {
+  @IsString()
+  name: string;
+
+  @IsString()
+  lastName: string;
+}
+
+export class BuyerDetailsDto {
+  @IsString()
+  name: string;
+
+  @IsString()
+  lastName: string;
+}
+
+export class OwnerDetailsDto {
+  @IsString()
+  companyName: string;
+}
+
+export class DeveloperDetailsDto {
+  @IsBoolean()
+  isLicensed: boolean;
+
+  @IsBoolean()
+  hasWafi: boolean;
+
+  @IsBoolean()
+  acceptsBanks: boolean;
+}
+
+export class BrokerDetailsDto {
+  @IsBoolean()
+  isLicensed: boolean;
+
+  @IsString()
+  licenseNumber: string;
 }
