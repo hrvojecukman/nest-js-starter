@@ -1,14 +1,6 @@
 import { Body, Controller, Post, UseGuards, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import {
-  InitiateLoginDto,
-  VerifyLoginOtpDto,
-  OwnerDetailsDto,
-  DeveloperDetailsDto,
-  BrokerDetailsDto,
-  Role,
-  BuyerDetailsDto,
-} from './dto/auth.dto';
+import { InitiateLoginDto, VerifyLoginOtpDto, Role } from './dto/auth.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { Request } from 'express';
 
@@ -43,33 +35,5 @@ export class AuthController {
   async refreshToken(@Req() req: Request) {
     const user = req.user as JwtUser;
     return this.authService.refreshToken(user.userId);
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Post('complete-registration/buyer')
-  async updateBuyerDetails(@Body() dto: BuyerDetailsDto, @Req() req: Request) {
-    const user = req.user as JwtUser;
-    return this.authService.updateRoleDetails(user.userId, dto);
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Post('complete-registration/owner')
-  async updateOwnerDetails(@Body() dto: OwnerDetailsDto, @Req() req: Request) {
-    const user = req.user as JwtUser;
-    return this.authService.updateRoleDetails(user.userId, dto);
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Post('complete-registration/developer')
-  async updateDeveloperDetails(@Body() dto: DeveloperDetailsDto, @Req() req: Request) {
-    const user = req.user as JwtUser;
-    return this.authService.updateRoleDetails(user.userId, dto);
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Post('complete-registration/broker')
-  async updateBrokerDetails(@Body() dto: BrokerDetailsDto, @Req() req: Request) {
-    const user = req.user as JwtUser;
-    return this.authService.updateRoleDetails(user.userId, dto);
   }
 }

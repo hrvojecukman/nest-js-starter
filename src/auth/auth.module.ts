@@ -7,6 +7,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { PrismaService } from '../prisma/prisma.service';
 import { PrismaModule } from 'src/prisma/prisma.module';
 import { TwilioModule } from '../twilio/twilio.module';
+import { UserModule } from '../user/user.module';
 
 @Module({
   imports: [
@@ -17,8 +18,10 @@ import { TwilioModule } from '../twilio/twilio.module';
     }),
     PrismaModule,
     TwilioModule,
+    UserModule,
   ],
   providers: [AuthService, JwtStrategy, PrismaService],
   controllers: [AuthController],
+  exports: [AuthService],
 })
 export class AuthModule {}
