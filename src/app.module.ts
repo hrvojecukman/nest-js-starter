@@ -9,6 +9,7 @@ import { UserModule } from './user/user.module';
 import { StripeModule } from './stripe/stripe.module';
 import { AdminModule } from './admin/admin.module';
 import { VerificationModule } from './verification/verification.module';
+import { PropertyModule } from './property/property.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { VerificationModule } from './verification/verification.module';
     StripeModule,
     AdminModule,
     VerificationModule,
+    PropertyModule,
   ],
   controllers: [AppController],
   providers: [AppService],
