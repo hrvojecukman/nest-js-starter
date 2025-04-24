@@ -22,12 +22,13 @@ enum PaymentStatus {
 }
 
 model User {
-  id          String   @id @default(uuid())
-  email       String?  @unique
-  phoneNumber String   @unique
-  role        Role     @default(BUYER)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id               String   @id @default(uuid())
+  email            String?  @unique
+  phoneNumber      String   @unique
+  role             Role     @default(BUYER)
+  stripeCustomerId String?  @unique
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   Buyer     Buyer?
   Developer Developer?

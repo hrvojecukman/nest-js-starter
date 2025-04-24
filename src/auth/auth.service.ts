@@ -84,7 +84,7 @@ export class AuthService {
   private async generateTokens(userId: string, phoneNumber: string, role: Role) {
     const accessToken = await this.jwtService.signAsync(
       { sub: userId, phoneNumber, role },
-      { secret: process.env.JWT_SECRET, expiresIn: '15m' },
+      { secret: process.env.JWT_SECRET, expiresIn: '60m' },
     );
 
     const refreshToken = await this.jwtService.signAsync(
