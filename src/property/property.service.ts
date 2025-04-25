@@ -1,24 +1,113 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePropertyDto, PropertyFilterDto } from './dto/property.dto';
-import { Prisma } from '@prisma/client';
+import { Prisma, MediaType } from '@prisma/client';
+import { S3Service } from '../s3/s3.service';
 
 @Injectable()
 export class PropertyService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly s3Service: S3Service,
+  ) {}
 
   async create(createPropertyDto: CreatePropertyDto, ownerId: string) {
-    return await this.prisma.property.create({
+    const { brokerId, projectId, ...propertyData } = createPropertyDto;
+    
+    const property = await this.prisma.property.create({
       data: {
-        ...createPropertyDto,
-        ownerId,
+        ...propertyData,
+        owner: {
+          connect: { id: ownerId }
+        },
+        ...(brokerId && {
+          broker: {
+            connect: { id: brokerId }
+          }
+        }),
+        ...(projectId && {
+          project: {
+            connect: { id: projectId }
+          }
+        })
       },
       include: {
-        owner: true,
-        broker: true,
+        owner: {
+          select: {
+            id: true,
+            phoneNumber: true,
+            Owner: {
+              select: {
+                companyName: true
+              }
+            }
+          },
+        },
+        broker: {
+          select: {
+            id: true,
+            phoneNumber: true,
+          },
+        },
         project: true,
+        media: true,
       },
     });
+
+    // Transform the response to flatten the owner structure
+    return {
+      ...property,
+      owner: {
+        id: property.owner.id,
+        phoneNumber: property.owner.phoneNumber,
+        companyName: property.owner.Owner?.companyName
+      }
+    };
+  }
+
+  async uploadMedia(
+    propertyId: string,
+    files: Express.Multer.File[],
+    type: MediaType,
+  ) {
+    // Check if property exists
+    const propertyExists = await this.prisma.property.findUnique({
+      where: { id: propertyId },
+      select: { id: true }
+    });
+
+    if (!propertyExists) {
+      throw new NotFoundException(`Property with ID ${propertyId} not found`);
+    }
+
+    const uploadPromises = files.map(async (file) => {
+      const { url, key } = await this.s3Service.uploadImage(file);
+      return this.prisma.propertyMedia.create({
+        data: {
+          url,
+          key,
+          type,
+          propertyId,
+        },
+      });
+    });
+
+    return Promise.all(uploadPromises);
+  }
+
+  async deleteMedia(propertyId: string, mediaId: string) {
+    const media = await this.prisma.propertyMedia.findFirst({
+      where: { id: mediaId, propertyId },
+    });
+
+    if (!media) {
+      throw new NotFoundException('Media not found');
+    }
+
+    await this.s3Service.deleteImage(media.key);
+    await this.prisma.propertyMedia.delete({ where: { id: mediaId } });
+
+    return { message: 'Media deleted successfully' };
   }
 
   async findAll(filterDto: PropertyFilterDto) {
@@ -27,7 +116,6 @@ export class PropertyService {
 
     const where: Prisma.PropertyWhereInput = {};
 
-    // Search in title and description
     if (search) {
       where.OR = [
         { title: { contains: search, mode: 'insensitive' } },
@@ -35,7 +123,6 @@ export class PropertyService {
       ];
     }
 
-    // Apply filters
     if (filters.category) where.category = filters.category;
     if (filters.type) where.type = filters.type;
     if (filters.unitStatus) where.unitStatus = filters.unitStatus;
@@ -58,9 +145,25 @@ export class PropertyService {
         skip,
         take: limit,
         include: {
-          owner: true,
-          broker: true,
+          owner: {
+            select: {
+              id: true,
+              phoneNumber: true,
+              Owner: {
+                select: {
+                  companyName: true
+                }
+              }
+            },
+          },
+          broker: {
+            select: {
+              id: true,
+              phoneNumber: true,
+            },
+          },
           project: true,
+          media: true,
         },
         orderBy: {
           createdAt: 'desc',
@@ -69,8 +172,18 @@ export class PropertyService {
       this.prisma.property.count({ where }),
     ]);
 
+    // Transform the response to flatten the owner structure
+    const transformedProperties = properties.map(property => ({
+      ...property,
+      owner: {
+        id: property.owner.id,
+        phoneNumber: property.owner.phoneNumber,
+        companyName: property.owner.Owner?.companyName
+      }
+    }));
+
     return {
-      data: properties,
+      data: transformedProperties,
       meta: {
         total,
         page,
@@ -84,9 +197,25 @@ export class PropertyService {
     const property = await this.prisma.property.findUnique({
       where: { id },
       include: {
-        owner: true,
-        broker: true,
+        owner: {
+          select: {
+            id: true,
+            phoneNumber: true,
+            Owner: {
+              select: {
+                companyName: true
+              }
+            }
+          },
+        },
+        broker: {
+          select: {
+            id: true,
+            phoneNumber: true,
+          },
+        },
         project: true,
+        media: true,
       },
     });
 
@@ -94,7 +223,15 @@ export class PropertyService {
       throw new NotFoundException(`Property with ID ${id} not found`);
     }
 
-    return property;
+    // Transform the response to flatten the owner structure
+    return {
+      ...property,
+      owner: {
+        id: property.owner.id,
+        phoneNumber: property.owner.phoneNumber,
+        companyName: property.owner.Owner?.companyName
+      }
+    };
   }
 
   async update(id: string, updatePropertyDto: Partial<CreatePropertyDto>) {
@@ -112,7 +249,18 @@ export class PropertyService {
   }
 
   async remove(id: string) {
-    await this.findOne(id);
+    const property = await this.findOne(id);
+
+    // Delete all media from S3 and database
+    const media = await this.prisma.propertyMedia.findMany({
+      where: { propertyId: id },
+    });
+
+    await Promise.all(
+      media.map(async (item) => {
+        await this.s3Service.deleteImage(item.key);
+      }),
+    );
 
     return this.prisma.property.delete({
       where: { id },

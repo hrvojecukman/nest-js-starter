@@ -30,7 +30,7 @@ export class CreatePropertyDto {
   @IsNotEmpty()
   description: string;
 
-  @IsDecimal()
+  @IsNumber()
   @IsNotEmpty()
   price: number;
 
@@ -106,31 +106,25 @@ export class CreatePropertyDto {
   unitStatus: UnitStatus;
 
   @IsArray()
-  @IsString({ each: true })
-  @IsOptional()
-  images?: string[];
-
-  @IsArray()
-  @IsEnum(MediaType, { each: true })
-  @IsOptional()
-  mediaTypes?: MediaType[];
-
-  @IsArray()
   @IsEnum(InfrastructureItem, { each: true })
   @IsOptional()
   infrastructureItems?: InfrastructureItem[];
 
-  @IsLatitude()
+  @IsNumber()
   @IsNotEmpty()
   locationLat: number;
 
-  @IsLongitude()
+  @IsNumber()
   @IsNotEmpty()
   locationLng: number;
 
   @IsString()
   @IsOptional()
   projectId?: string;
+
+  @IsString()
+  @IsOptional()
+  brokerId?: string;
 }
 
 export class PropertyFilterDto {

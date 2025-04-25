@@ -71,35 +71,50 @@ const generateUser = (role: Role) => {
   }
 };
 
-const generateProperty = (ownerId: string, brokerId: string) => ({
-  title: faker.commerce.productName(),
-  description: faker.commerce.productDescription(),
-  price: faker.number.int({ min: 100000, max: 5000000 }),
-  currency: 'USD',
-  downPaymentPercentage: faker.number.int({ min: 10, max: 30 }),
-  cashBackPercentage: faker.number.int({ min: 0, max: 10 }),
-  cityDis: faker.location.city(),
-  address: faker.location.streetAddress(),
-  space: faker.number.int({ min: 50, max: 2000 }),
-  numberOfLivingRooms: faker.number.int({ min: 0, max: 5 }),
-  numberOfRooms: faker.number.int({ min: 1, max: 10 }),
-  numberOfKitchen: faker.number.int({ min: 1, max: 3 }),
-  numberOfWC: faker.number.int({ min: 1, max: 6 }),
-  numberOfFloors: faker.number.int({ min: 1, max: 5 }),
-  streetWidth: faker.number.int({ min: 5, max: 20 }),
-  age: faker.number.int({ min: 0, max: 20 }),
-  facing: getRandomEnum(FacingDirection),
-  type: getRandomEnum(PropertyType),
-  category: getRandomEnum(PropertyCategory),
-  unitStatus: getRandomEnum(UnitStatus),
-  images: Array.from({ length: faker.number.int({ min: 1, max: 5 }) }, () => faker.image.url()),
-  mediaTypes: getRandomEnums(MediaType, faker.number.int({ min: 1, max: 3 })),
-  infrastructureItems: getRandomEnums(InfrastructureItem, faker.number.int({ min: 2, max: 6 })),
-  locationLat: faker.location.latitude(),
-  locationLng: faker.location.longitude(),
-  ownerId,
-  brokerId,
-});
+const generateProperty = (ownerId: string, brokerId: string) => {
+  const mediaUrls = Array.from({ length: faker.number.int({ min: 1, max: 5 }) }, () => ({
+    url: faker.image.url(),
+    key: `properties/${Date.now()}-${faker.string.uuid()}.jpg`,
+    type: MediaType.photo,
+  }));
+
+  const videoUrls = Array.from({ length: faker.number.int({ min: 0, max: 2 }) }, () => ({
+    url: faker.internet.url(),
+    key: `properties/${Date.now()}-${faker.string.uuid()}.mp4`,
+    type: MediaType.video,
+  }));
+
+  return {
+    title: faker.commerce.productName(),
+    description: faker.commerce.productDescription(),
+    price: faker.number.int({ min: 100000, max: 5000000 }),
+    currency: 'USD',
+    downPaymentPercentage: faker.number.int({ min: 10, max: 30 }),
+    cashBackPercentage: faker.number.int({ min: 0, max: 10 }),
+    cityDis: faker.location.city(),
+    address: faker.location.streetAddress(),
+    space: faker.number.int({ min: 50, max: 2000 }),
+    numberOfLivingRooms: faker.number.int({ min: 0, max: 5 }),
+    numberOfRooms: faker.number.int({ min: 1, max: 10 }),
+    numberOfKitchen: faker.number.int({ min: 1, max: 3 }),
+    numberOfWC: faker.number.int({ min: 1, max: 6 }),
+    numberOfFloors: faker.number.int({ min: 1, max: 5 }),
+    streetWidth: faker.number.int({ min: 5, max: 20 }),
+    age: faker.number.int({ min: 0, max: 20 }),
+    facing: getRandomEnum(FacingDirection),
+    type: getRandomEnum(PropertyType),
+    category: getRandomEnum(PropertyCategory),
+    unitStatus: getRandomEnum(UnitStatus),
+    infrastructureItems: getRandomEnums(InfrastructureItem, faker.number.int({ min: 2, max: 6 })),
+    locationLat: faker.location.latitude(),
+    locationLng: faker.location.longitude(),
+    ownerId,
+    brokerId,
+    media: {
+      create: [...mediaUrls, ...videoUrls],
+    },
+  };
+};
 
 async function main() {
   // Configuration
