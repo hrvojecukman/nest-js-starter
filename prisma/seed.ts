@@ -53,6 +53,7 @@ const generateUser = (role: Role) => {
             isLicensed: faker.datatype.boolean(),
             hasWafi: faker.datatype.boolean(),
             acceptsBanks: faker.datatype.boolean(),
+            companyName: faker.company.name(),
           },
         },
       };
@@ -116,6 +117,39 @@ const generateProperty = (ownerId: string, brokerId: string) => {
   };
 };
 
+const generateProject = (developerId: string) => {
+  const mediaUrls = Array.from({ length: faker.number.int({ min: 1, max: 5 }) }, () => ({
+    url: faker.image.url(),
+    key: `projects/${Date.now()}-${faker.string.uuid()}.jpg`,
+    type: MediaType.photo,
+  }));
+
+  const videoUrls = Array.from({ length: faker.number.int({ min: 0, max: 2 }) }, () => ({
+    url: faker.internet.url(),
+    key: `projects/${Date.now()}-${faker.string.uuid()}.mp4`,
+    type: MediaType.video,
+  }));
+
+  return {
+    name: faker.company.name(),
+    description: faker.commerce.productDescription(),
+    city: faker.location.city(),
+    type: getRandomEnum(PropertyType),
+    category: getRandomEnum(PropertyCategory),
+    infrastructureItems: getRandomEnums(InfrastructureItem, faker.number.int({ min: 2, max: 6 })),
+    developerId,
+    media: {
+      create: [...mediaUrls, ...videoUrls],
+    },
+    nearbyPlaces: {
+      create: Array.from({ length: faker.number.int({ min: 3, max: 8 }) }, () => ({
+        name: faker.location.street(),
+        distance: faker.number.float({ min: 0.1, max: 5, fractionDigits: 1 }),
+      })),
+    },
+  };
+};
+
 async function main() {
   // Configuration
   const config = {
@@ -127,6 +161,7 @@ async function main() {
       buyer: 20,
     },
     propertiesPerOwner: 10,
+    projectsPerDeveloper: 3,
   };
 
   // Create users
@@ -169,6 +204,15 @@ async function main() {
     users.buyer.push(await prisma.user.create({ data: generateUser(Role.BUYER) }));
   }
 
+  // Create projects
+  for (const developer of users.developer) {
+    for (let i = 0; i < config.projectsPerDeveloper; i++) {
+      await prisma.project.create({
+        data: generateProject(developer.id),
+      });
+    }
+  }
+
   // Create properties
   for (const owner of users.owner) {
     for (let i = 0; i < config.propertiesPerOwner; i++) {
@@ -187,6 +231,7 @@ async function main() {
   console.log(`- ${users.developer.length} developer users`);
   console.log(`- ${users.buyer.length} buyer users`);
   console.log(`- ${users.owner.length * config.propertiesPerOwner} properties`);
+  console.log(`- ${users.developer.length * config.projectsPerDeveloper} projects`);
 }
 
 main()

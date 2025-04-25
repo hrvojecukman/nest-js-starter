@@ -168,3 +168,40 @@ export class PropertyFilterDto {
   @IsNumber()
   limit?: number = 10;
 }
+
+export class PropertyDto {
+  id: string;
+  title: string;
+  description: string;
+  price: number;
+  currency: string;
+  downPaymentPercentage: number;
+  cashBackPercentage?: number;
+  cityDis: string;
+  address: string;
+  space: number;
+  numberOfLivingRooms: number;
+  numberOfRooms: number;
+  numberOfKitchen: number;
+  numberOfWC: number;
+  numberOfFloors: number;
+  streetWidth: number;
+  age: number;
+  facing: FacingDirection;
+  type: PropertyType;
+  category: PropertyCategory;
+  unitStatus: UnitStatus;
+  infrastructureItems: InfrastructureItem[];
+  locationLat: number;
+  locationLng: number;
+  media: { url: string; type: string }[];
+  owner: {
+    id: string;
+    phoneNumber: string;
+    companyName?: string;
+  };
+  broker?: {
+    id: string;
+    phoneNumber: string;
+  };
+}

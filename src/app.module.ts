@@ -10,6 +10,8 @@ import { StripeModule } from './stripe/stripe.module';
 import { AdminModule } from './admin/admin.module';
 import { VerificationModule } from './verification/verification.module';
 import { PropertyModule } from './property/property.module';
+import { ProjectModule } from './project/project.module';
+import { S3Module } from './s3/s3.module';
 
 @Module({
   imports: [
@@ -24,6 +26,8 @@ import { PropertyModule } from './property/property.module';
     AdminModule,
     VerificationModule,
     PropertyModule,
+    ProjectModule,
+    S3Module,
   ],
   controllers: [AppController],
   providers: [AppService],
