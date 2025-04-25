@@ -14,6 +14,20 @@ export class PropertyService {
   async create(createPropertyDto: CreatePropertyDto, ownerId: string) {
     const { brokerId, projectId, ...propertyData } = createPropertyDto;
     
+    // Check if user exists and has appropriate role
+    const user = await this.prisma.user.findUnique({
+      where: { id: ownerId },
+      select: { role: true }
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (user.role !== 'OWNER' && user.role !== 'DEVELOPER') {
+      throw new BadRequestException('Only owners and developers can create properties');
+    }
+
     const property = await this.prisma.property.create({
       data: {
         ...propertyData,
@@ -40,6 +54,11 @@ export class PropertyService {
               select: {
                 companyName: true
               }
+            },
+            Developer: {
+              select: {
+                companyName: true
+              }
             }
           },
         },
@@ -60,7 +79,7 @@ export class PropertyService {
       owner: {
         id: property.owner.id,
         phoneNumber: property.owner.phoneNumber,
-        companyName: property.owner.Owner?.companyName
+        companyName: property.owner.Owner?.companyName || property.owner.Developer?.companyName
       }
     };
   }
@@ -153,6 +172,11 @@ export class PropertyService {
                 select: {
                   companyName: true
                 }
+              },
+              Developer: {
+                select: {
+                  companyName: true
+                }
               }
             },
           },
@@ -178,7 +202,7 @@ export class PropertyService {
       owner: {
         id: property.owner.id,
         phoneNumber: property.owner.phoneNumber,
-        companyName: property.owner.Owner?.companyName
+        companyName: property.owner.Owner?.companyName || property.owner.Developer?.companyName
       }
     }));
 
@@ -202,6 +226,11 @@ export class PropertyService {
             id: true,
             phoneNumber: true,
             Owner: {
+              select: {
+                companyName: true
+              }
+            },
+            Developer: {
               select: {
                 companyName: true
               }
@@ -229,7 +258,7 @@ export class PropertyService {
       owner: {
         id: property.owner.id,
         phoneNumber: property.owner.phoneNumber,
-        companyName: property.owner.Owner?.companyName
+        companyName: property.owner.Owner?.companyName || property.owner.Developer?.companyName
       }
     };
   }

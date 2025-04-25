@@ -88,7 +88,7 @@ model User {
   Broker    Broker?
 
   payments           Payment[]
-  ownedProperties    Property[] @relation("OwnerProperties")
+  ownedProperties    Property[] @relation("PropertyOwner")
   brokeredProperties Property[] @relation("BrokerProperties")
 
   @@index([phoneNumber])
@@ -107,6 +107,7 @@ model Developer {
   isLicensed   Boolean
   hasWafi      Boolean
   acceptsBanks Boolean
+  companyName  String?
 }
 
 model Owner {
@@ -171,7 +172,7 @@ model Property {
   brokerId  String?
   projectId String?
 
-  owner   User     @relation("OwnerProperties", fields: [ownerId], references: [id])
+  owner   User     @relation("PropertyOwner", fields: [ownerId], references: [id])
   broker  User?    @relation("BrokerProperties", fields: [brokerId], references: [id])
   project Project? @relation(fields: [projectId], references: [id])
 
