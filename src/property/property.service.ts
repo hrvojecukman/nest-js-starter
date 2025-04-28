@@ -191,31 +191,45 @@ export class PropertyService {
         where,
         skip,
         take: limit,
-        include: {
+        select: {
+          id: true,
+          title: true,
+          price: true,
+          currency: true,
+          cityDis: true,
+          space: true,
+          type: true,
+          category: true,
+          unitStatus: true,
+          locationLat: true,
+          locationLng: true,
+          numberOfLivingRooms: true,
+          numberOfRooms: true,
+          numberOfKitchen: true,
+          numberOfWC: true,
+          numberOfFloors: true,
+          streetWidth: true,
+          media: {
+            select: {
+              url: true,
+              type: true
+            },
+            take: 1
+          },
           owner: {
             select: {
-              id: true,
-              phoneNumber: true,
-              Owner: {
-                select: {
-                  companyName: true
-                }
-              },
               Developer: {
                 select: {
                   companyName: true
                 }
+              },
+              Owner: {
+                select: {
+                  companyName: true
+                }
               }
-            },
-          },
-          broker: {
-            select: {
-              id: true,
-              phoneNumber: true,
-            },
-          },
-          project: true,
-          media: true,
+            }
+          }
         },
         orderBy: {
           [filters.sortBy || 'createdAt']: filters.sortOrder || 'desc',
@@ -224,18 +238,33 @@ export class PropertyService {
       this.prisma.property.count({ where }),
     ]);
 
-    // Transform the response to flatten the owner structure
-    const transformedProperties = properties.map(property => ({
-      ...property,
-      owner: {
-        id: property.owner.id,
-        phoneNumber: property.owner.phoneNumber,
-        companyName: property.owner.Owner?.companyName || property.owner.Developer?.companyName
-      }
+    // Transform the response to a lightweight format
+    const lightweightProperties = properties.map(property => ({
+      id: property.id,
+      title: property.title,
+      price: Number(property.price),
+      currency: property.currency,
+      city: property.cityDis,
+      space: property.space,
+      type: property.type,
+      category: property.category,
+      unitStatus: property.unitStatus,
+      location: {
+        lat: property.locationLat,
+        lng: property.locationLng
+      },
+      numberOfLivingRooms: property.numberOfLivingRooms,
+      numberOfRooms: property.numberOfRooms,
+      numberOfKitchen: property.numberOfKitchen,
+      numberOfWC: property.numberOfWC,
+      numberOfFloors: property.numberOfFloors,
+      streetWidth: property.streetWidth,
+      thumbnail: property.media[0]?.url,
+      companyName: property.owner.Developer?.companyName || property.owner.Owner?.companyName
     }));
 
     return {
-      data: transformedProperties,
+      data: lightweightProperties,
       meta: {
         total,
         page,
