@@ -29,6 +29,12 @@ export class PropertyController {
     return this.propertyService.create(createPropertyDto, req.user.userId);
   }
 
+  @Post('createMany')
+  @UseGuards(JwtAuthGuard)
+  createMany(@Body() createPropertyDtos: CreatePropertyDto[], @Request() req: { user: JwtUser }) {
+    return this.propertyService.createMany(createPropertyDtos, req.user.userId);
+  }
+
   @Post(':id/media/:type')
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(FilesInterceptor('files', 10))

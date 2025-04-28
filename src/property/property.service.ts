@@ -295,4 +295,85 @@ export class PropertyService {
       where: { id },
     });
   }
+
+  async createMany(createPropertyDtos: CreatePropertyDto[], ownerId: string) {
+    // Check if user exists and has appropriate role
+    const user = await this.prisma.user.findUnique({
+      where: { id: ownerId },
+      select: { role: true }
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (user.role !== 'OWNER' && user.role !== 'DEVELOPER') {
+      throw new BadRequestException('Only owners and developers can create properties');
+    }
+
+    // Use transaction to ensure all properties are created or none
+    return this.prisma.$transaction(async (prisma) => {
+      const properties = await Promise.all(
+        createPropertyDtos.map(async (dto) => {
+          const { brokerId, projectId, ...propertyData } = dto;
+          
+          const property = await prisma.property.create({
+            data: {
+              ...propertyData,
+              owner: {
+                connect: { id: ownerId }
+              },
+              ...(brokerId && {
+                broker: {
+                  connect: { id: brokerId }
+                }
+              }),
+              ...(projectId && {
+                project: {
+                  connect: { id: projectId }
+                }
+              })
+            },
+            include: {
+              owner: {
+                select: {
+                  id: true,
+                  phoneNumber: true,
+                  Owner: {
+                    select: {
+                      companyName: true
+                    }
+                  },
+                  Developer: {
+                    select: {
+                      companyName: true
+                    }
+                  }
+                },
+              },
+              broker: {
+                select: {
+                  id: true,
+                  phoneNumber: true,
+                },
+              },
+              project: true,
+              media: true,
+            },
+          });
+
+          return {
+            ...property,
+            owner: {
+              id: property.owner.id,
+              phoneNumber: property.owner.phoneNumber,
+              companyName: property.owner.Owner?.companyName || property.owner.Developer?.companyName
+            }
+          };
+        })
+      );
+
+      return properties;
+    });
+  }
 }

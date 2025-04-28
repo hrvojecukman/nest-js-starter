@@ -4,6 +4,7 @@ import { CreateProjectDto, UpdateProjectDto, ProjectSummaryDto, ProjectDetailDto
 import { Role, Prisma, Project, Property, MediaType } from '@prisma/client';
 import { PropertyDto } from 'src/property/dto/property.dto';
 import { S3Service } from '../s3/s3.service';
+import { ProjectFilterDto } from './dto/project.dto';
 
 @Injectable()
 export class ProjectService {
@@ -203,11 +204,26 @@ export class ProjectService {
     return { message: 'Media deleted successfully' };
   }
 
-  async findAll(page = 1, limit = 10) {
+  async findAll(filterDto: ProjectFilterDto) {
+    const { page = 1, limit = 10, search, ...filters } = filterDto;
     const skip = (page - 1) * limit;
+
+    const where: Prisma.ProjectWhereInput = {};
+
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    if (filters.type) where.type = filters.type;
+    if (filters.category) where.category = filters.category;
+    if (filters.city) where.city = filters.city;
 
     const [projects, total] = await Promise.all([
       this.prisma.project.findMany({
+        where,
         skip,
         take: limit,
         include: {
@@ -232,7 +248,7 @@ export class ProjectService {
           media: true
         },
       }),
-      this.prisma.project.count()
+      this.prisma.project.count({ where })
     ]);
 
     const projectsWithStats = await Promise.all(projects.map(async (p) => {
@@ -370,5 +386,45 @@ export class ProjectService {
     return this.prisma.project.delete({
       where: { id }
     });
+  }
+
+  async addProperties(projectId: string, propertyIds: string[], userId: string) {
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: { developer: { select: { id: true } } }
+    });
+
+    if (!project) {
+      throw new NotFoundException(`Project with ID ${projectId} not found`);
+    }
+
+    if (project.developer.id !== userId) {
+      throw new ForbiddenException('You can only add properties to your own projects');
+    }
+
+    // Verify all properties exist and belong to the user
+    const properties = await this.prisma.property.findMany({
+      where: {
+        id: { in: propertyIds },
+        ownerId: userId
+      },
+      select: { id: true }
+    });
+
+    if (properties.length !== propertyIds.length) {
+      throw new NotFoundException('One or more properties not found or not owned by you');
+    }
+
+    // Update all properties to be part of the project
+    await this.prisma.property.updateMany({
+      where: {
+        id: { in: propertyIds }
+      },
+      data: {
+        projectId
+      }
+    });
+
+    return this.findOne(projectId);
   }
 } 

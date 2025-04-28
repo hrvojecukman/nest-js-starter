@@ -1,6 +1,7 @@
 import { PropertyType, PropertyCategory, InfrastructureItem, MediaType } from '@prisma/client';
 import { PropertyDto } from '../../property/dto/property.dto';
 import { PartialType } from '@nestjs/mapped-types';
+import { IsOptional, IsString, IsEnum, IsNumber } from 'class-validator';
 
 export class MediaDto {
   url: string;
@@ -43,4 +44,30 @@ export class ProjectDetailDto extends ProjectSummaryDto {
   infrastructureItems: InfrastructureItem[];
   properties: PropertyDto[];
   nearbyPlaces: NearbyPlaceDto[];
+}
+
+export class ProjectFilterDto {
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @IsOptional()
+  @IsEnum(PropertyType)
+  type?: PropertyType;
+
+  @IsOptional()
+  @IsEnum(PropertyCategory)
+  category?: PropertyCategory;
+
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @IsOptional()
+  @IsNumber()
+  page?: number = 1;
+
+  @IsOptional()
+  @IsNumber()
+  limit?: number = 10;
 } 

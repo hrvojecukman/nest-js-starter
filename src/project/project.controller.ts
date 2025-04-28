@@ -5,6 +5,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { JwtUser } from '../auth/auth.controller';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { MediaType } from '@prisma/client';
+import { ProjectFilterDto } from './dto/project.dto';
 
 @Controller('projects')
 export class ProjectController {
@@ -14,6 +15,16 @@ export class ProjectController {
   @UseGuards(JwtAuthGuard)
   create(@Body() createProjectDto: CreateProjectDto, @Request() req: { user: JwtUser }) {
     return this.projectService.create(createProjectDto, req.user.userId);
+  }
+
+  @Post(':id/properties')
+  @UseGuards(JwtAuthGuard)
+  addProperties(
+    @Param('id') id: string,
+    @Body() propertyIds: string[],
+    @Request() req: { user: JwtUser }
+  ) {
+    return this.projectService.addProperties(id, propertyIds, req.user.userId);
   }
 
   @Post(':id/media/:type')
@@ -37,11 +48,8 @@ export class ProjectController {
   }
 
   @Get()
-  findAll(
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
-  ) {
-    return this.projectService.findAll(page, limit);
+  findAll(@Query() filterDto: ProjectFilterDto) {
+    return this.projectService.findAll(filterDto);
   }
 
   @Get(':id')
