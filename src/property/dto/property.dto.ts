@@ -162,6 +162,21 @@ export class PropertyFilterDto {
 
   @IsOptional()
   @IsNumber()
+  @IsLatitude()
+  lat?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @IsLongitude()
+  lng?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  radius?: number; // in kilometers
+
+  @IsOptional()
+  @IsNumber()
   page?: number = 1;
 
   @IsOptional()

@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreatePropertyDto, PropertyFilterDto } from './dto/property.dto';
 import { Prisma, MediaType } from '@prisma/client';
 import { S3Service } from '../s3/s3.service';
+import { calculateBoundingBox } from '../utils/location.utils';
 
 @Injectable()
 export class PropertyService {
@@ -130,7 +131,7 @@ export class PropertyService {
   }
 
   async findAll(filterDto: PropertyFilterDto) {
-    const { page = 1, limit = 10, search, ...filters } = filterDto;
+    const { page = 1, limit = 10, search, lat, lng, radius, ...filters } = filterDto;
     const skip = (page - 1) * limit;
 
     const where: Prisma.PropertyWhereInput = {};
@@ -156,6 +157,15 @@ export class PropertyService {
         ...(filters.minSpace ? { gte: Number(filters.minSpace) } : {}),
         ...(filters.maxSpace ? { lte: Number(filters.maxSpace) } : {}),
       };
+    }
+
+    // Add location filtering using bounding box
+    if (lat !== undefined && lng !== undefined && radius !== undefined) {
+      const { minLat, maxLat, minLng, maxLng } = calculateBoundingBox(lat, lng, radius);
+      where.AND = [
+        { locationLat: { gte: minLat, lte: maxLat } },
+        { locationLng: { gte: minLng, lte: maxLng } },
+      ];
     }
 
     const [properties, total] = await Promise.all([
