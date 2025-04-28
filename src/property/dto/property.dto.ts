@@ -189,6 +189,14 @@ export class PropertyFilterDto {
   radius?: number; // in kilometers
 
   @IsOptional()
+  @IsString()
+  brokerId?: string;
+
+  @IsOptional()
+  @IsString()
+  developerId?: string;
+
+  @IsOptional()
   @IsEnum(PropertySortField)
   sortBy?: PropertySortField = PropertySortField.CREATED_AT;
 

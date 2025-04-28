@@ -60,6 +60,22 @@ export class PropertyController {
     return this.propertyService.findAll(filterDto);
   }
 
+  @Get('broker/:brokerId')
+  findByBrokerId(
+    @Param('brokerId') brokerId: string,
+    @Query() filterDto: PropertyFilterDto,
+  ) {
+    return this.propertyService.findAll({ ...filterDto, brokerId });
+  }
+
+  @Get('developer/:developerId')
+  findByDeveloperId(
+    @Param('developerId') developerId: string,
+    @Query() filterDto: PropertyFilterDto,
+  ) {
+    return this.propertyService.findAll({ ...filterDto, developerId });
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.propertyService.findOne(id);

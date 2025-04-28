@@ -136,11 +136,8 @@ export class PropertyService {
       page = 1, 
       limit = 10, 
       search, 
-      lat, 
-      lng, 
-      radius, 
-      sortBy = PropertySortField.CREATED_AT,
-      sortOrder = SortOrder.DESC,
+      brokerId,
+      developerId,
       ...filters 
     } = filterDto;
     const skip = (page - 1) * limit;
@@ -154,8 +151,8 @@ export class PropertyService {
       ];
     }
 
-    if (filters.category) where.category = filters.category;
     if (filters.type) where.type = filters.type;
+    if (filters.category) where.category = filters.category;
     if (filters.unitStatus) where.unitStatus = filters.unitStatus;
     if (filters.minPrice || filters.maxPrice) {
       where.price = {
@@ -170,9 +167,19 @@ export class PropertyService {
       };
     }
 
+    if (brokerId) {
+      where.brokerId = brokerId;
+    }
+
+    if (developerId) {
+      where.project = {
+        developerId: developerId
+      };
+    }
+
     // Add location filtering using bounding box
-    if (lat !== undefined && lng !== undefined && radius !== undefined) {
-      const { minLat, maxLat, minLng, maxLng } = calculateBoundingBox(lat, lng, radius);
+    if (filters.lat !== undefined && filters.lng !== undefined && filters.radius !== undefined) {
+      const { minLat, maxLat, minLng, maxLng } = calculateBoundingBox(filters.lat, filters.lng, filters.radius);
       where.AND = [
         { locationLat: { gte: minLat, lte: maxLat } },
         { locationLng: { gte: minLng, lte: maxLng } },
@@ -211,7 +218,7 @@ export class PropertyService {
           media: true,
         },
         orderBy: {
-          [sortBy]: sortOrder,
+          [filters.sortBy || 'createdAt']: filters.sortOrder || 'desc',
         },
       }),
       this.prisma.property.count({ where }),
