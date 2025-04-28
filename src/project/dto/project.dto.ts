@@ -76,6 +76,10 @@ export class ProjectFilterDto {
   city?: string;
 
   @IsOptional()
+  @IsString()
+  developerId?: string;
+
+  @IsOptional()
   @IsEnum(ProjectSortField)
   sortBy?: ProjectSortField = ProjectSortField.CREATED_AT;
 

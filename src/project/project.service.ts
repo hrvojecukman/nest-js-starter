@@ -210,6 +210,7 @@ export class ProjectService {
       page = 1, 
       limit = 10, 
       search, 
+      developerId,
       sortBy = ProjectSortField.CREATED_AT,
       sortOrder = SortOrder.DESC,
       ...filters 
@@ -228,6 +229,10 @@ export class ProjectService {
     if (filters.type) where.type = filters.type;
     if (filters.category) where.category = filters.category;
     if (filters.city) where.city = filters.city;
+
+    if (developerId) {
+      where.developerId = developerId;
+    }
 
     const [projects, total] = await Promise.all([
       this.prisma.project.findMany({
