@@ -5,6 +5,7 @@ import { Role, Prisma, Project, Property, MediaType } from '@prisma/client';
 import { PropertyDto } from 'src/property/dto/property.dto';
 import { S3Service } from '../s3/s3.service';
 import { ProjectFilterDto } from './dto/project.dto';
+import { ProjectSortField, SortOrder } from './dto/project.dto';
 
 @Injectable()
 export class ProjectService {
@@ -205,7 +206,14 @@ export class ProjectService {
   }
 
   async findAll(filterDto: ProjectFilterDto) {
-    const { page = 1, limit = 10, search, ...filters } = filterDto;
+    const { 
+      page = 1, 
+      limit = 10, 
+      search, 
+      sortBy = ProjectSortField.CREATED_AT,
+      sortOrder = SortOrder.DESC,
+      ...filters 
+    } = filterDto;
     const skip = (page - 1) * limit;
 
     const where: Prisma.ProjectWhereInput = {};
@@ -246,6 +254,9 @@ export class ProjectService {
           },
           nearbyPlaces: true,
           media: true
+        },
+        orderBy: {
+          [sortBy]: sortOrder,
         },
       }),
       this.prisma.project.count({ where })

@@ -46,6 +46,18 @@ export class ProjectDetailDto extends ProjectSummaryDto {
   nearbyPlaces: NearbyPlaceDto[];
 }
 
+export enum ProjectSortField {
+  NAME = 'name',
+  CREATED_AT = 'createdAt',
+  NUMBER_OF_UNITS = 'numberOfUnits',
+  AVERAGE_PRICE = 'averagePrice',
+}
+
+export enum SortOrder {
+  ASC = 'asc',
+  DESC = 'desc',
+}
+
 export class ProjectFilterDto {
   @IsOptional()
   @IsString()
@@ -62,6 +74,14 @@ export class ProjectFilterDto {
   @IsOptional()
   @IsString()
   city?: string;
+
+  @IsOptional()
+  @IsEnum(ProjectSortField)
+  sortBy?: ProjectSortField = ProjectSortField.CREATED_AT;
+
+  @IsOptional()
+  @IsEnum(SortOrder)
+  sortOrder?: SortOrder = SortOrder.DESC;
 
   @IsOptional()
   @IsNumber()

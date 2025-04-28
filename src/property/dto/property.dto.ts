@@ -127,6 +127,19 @@ export class CreatePropertyDto {
   brokerId?: string;
 }
 
+export enum PropertySortField {
+  PRICE = 'price',
+  CREATED_AT = 'createdAt',
+  SPACE = 'space',
+  AGE = 'age',
+  STREET_WIDTH = 'streetWidth',
+}
+
+export enum SortOrder {
+  ASC = 'asc',
+  DESC = 'desc',
+}
+
 export class PropertyFilterDto {
   @IsOptional()
   @IsString()
@@ -174,6 +187,14 @@ export class PropertyFilterDto {
   @IsNumber()
   @Min(0)
   radius?: number; // in kilometers
+
+  @IsOptional()
+  @IsEnum(PropertySortField)
+  sortBy?: PropertySortField = PropertySortField.CREATED_AT;
+
+  @IsOptional()
+  @IsEnum(SortOrder)
+  sortOrder?: SortOrder = SortOrder.DESC;
 
   @IsOptional()
   @IsNumber()
