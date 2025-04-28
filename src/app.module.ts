@@ -12,6 +12,7 @@ import { VerificationModule } from './verification/verification.module';
 import { PropertyModule } from './property/property.module';
 import { ProjectModule } from './project/project.module';
 import { S3Module } from './s3/s3.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { S3Module } from './s3/s3.module';
     PropertyModule,
     ProjectModule,
     S3Module,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
