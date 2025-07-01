@@ -37,6 +37,7 @@ export class UserService {
             isLicensed: true,
             hasWafi: true,
             acceptsBanks: true,
+            companyName: true,
           },
         },
         Broker: {
@@ -128,10 +129,11 @@ export class UserService {
     if (
       details.isLicensed === undefined ||
       details.hasWafi === undefined ||
-      details.acceptsBanks === undefined
+      details.acceptsBanks === undefined ||
+      !details.companyName
     ) {
       throw new BadRequestException(
-        'isLicensed, hasWafi, and acceptsBanks are required for Developer',
+        'isLicensed, hasWafi, acceptsBanks, and companyName are required for Developer',
       );
     }
 
@@ -146,6 +148,7 @@ export class UserService {
           isLicensed: details.isLicensed,
           hasWafi: details.hasWafi,
           acceptsBanks: details.acceptsBanks,
+          companyName: details.companyName,
         },
       });
     } else {
@@ -155,6 +158,7 @@ export class UserService {
           isLicensed: details.isLicensed,
           hasWafi: details.hasWafi,
           acceptsBanks: details.acceptsBanks,
+          companyName: details.companyName,
         },
       });
     }
