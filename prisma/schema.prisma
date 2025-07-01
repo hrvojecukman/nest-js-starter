@@ -38,6 +38,7 @@ enum PropertyCategory {
 enum UnitStatus {
   available
   sold
+  reserved
   rented
 }
 
