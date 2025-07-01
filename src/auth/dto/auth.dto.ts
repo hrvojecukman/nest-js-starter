@@ -84,6 +84,9 @@ export class DeveloperDetailsDto {
 
   @IsBoolean()
   acceptsBanks: boolean;
+
+  @IsString()
+  companyName: string;
 }
 
 export class BrokerDetailsDto {

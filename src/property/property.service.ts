@@ -26,8 +26,8 @@ export class PropertyService {
       throw new NotFoundException('User not found');
     }
 
-    if (user.role !== 'OWNER' && user.role !== 'DEVELOPER') {
-      throw new BadRequestException('Only owners and developers can create properties');
+    if (user.role !== 'OWNER' && user.role !== 'DEVELOPER' && user.role !== 'BROKER') {
+      throw new BadRequestException('Only owners, developers and brokers can create properties');
     }
 
     const property = await this.prisma.property.create({
@@ -140,7 +140,11 @@ export class PropertyService {
       developerId,
       ...filters 
     } = filterDto;
-    const skip = (page - 1) * limit;
+    
+    // Convert string values to numbers for pagination
+    const pageNum = typeof page === 'string' ? parseInt(page, 10) : page;
+    const limitNum = typeof limit === 'string' ? parseInt(limit, 10) : limit;
+    const skip = (pageNum - 1) * limitNum;
 
     const where: Prisma.PropertyWhereInput = {};
 
@@ -156,8 +160,8 @@ export class PropertyService {
     if (filters.unitStatus) where.unitStatus = filters.unitStatus;
     if (filters.minPrice || filters.maxPrice) {
       where.price = {
-        ...(filters.minPrice ? { gte: filters.minPrice } : {}),
-        ...(filters.maxPrice ? { lte: filters.maxPrice } : {}),
+        ...(filters.minPrice ? { gte: Number(filters.minPrice) } : {}),
+        ...(filters.maxPrice ? { lte: Number(filters.maxPrice) } : {}),
       };
     }
     if (filters.minSpace || filters.maxSpace) {
@@ -179,7 +183,10 @@ export class PropertyService {
 
     // Add location filtering using bounding box
     if (filters.lat !== undefined && filters.lng !== undefined && filters.radius !== undefined) {
-      const { minLat, maxLat, minLng, maxLng } = calculateBoundingBox(filters.lat, filters.lng, filters.radius);
+      const lat = Number(filters.lat);
+      const lng = Number(filters.lng);
+      const radius = Number(filters.radius);
+      const { minLat, maxLat, minLng, maxLng } = calculateBoundingBox(lat, lng, radius);
       where.AND = [
         { locationLat: { gte: minLat, lte: maxLat } },
         { locationLng: { gte: minLng, lte: maxLng } },
@@ -190,7 +197,7 @@ export class PropertyService {
       this.prisma.property.findMany({
         where,
         skip,
-        take: limit,
+        take: limitNum,
         select: {
           id: true,
           title: true,
@@ -218,6 +225,7 @@ export class PropertyService {
           },
           owner: {
             select: {
+              role: true,
               Developer: {
                 select: {
                   companyName: true
@@ -227,9 +235,14 @@ export class PropertyService {
                 select: {
                   companyName: true
                 }
+              },
+              Broker: {
+                select: {
+                  licenseNumber: true,
+                }
               }
             }
-          }
+          },
         },
         orderBy: {
           [filters.sortBy || 'createdAt']: filters.sortOrder || 'desc',
@@ -260,16 +273,19 @@ export class PropertyService {
       numberOfFloors: property.numberOfFloors,
       streetWidth: property.streetWidth,
       thumbnail: property.media[0]?.url,
-      companyName: property.owner.Developer?.companyName || property.owner.Owner?.companyName
+      companyName: property.owner.Developer?.companyName || property.owner.Owner?.companyName,
+      brokerLicenseNumber: property.owner.Broker?.licenseNumber,
+      ownerRole: property.owner.role,
     }));
 
     return {
       data: lightweightProperties,
       meta: {
         total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum),
+        hasMorePages: pageNum < Math.ceil(total / limitNum),
       },
     };
   }
@@ -282,6 +298,7 @@ export class PropertyService {
           select: {
             id: true,
             phoneNumber: true,
+            role: true,
             Owner: {
               select: {
                 companyName: true
@@ -291,6 +308,11 @@ export class PropertyService {
               select: {
                 companyName: true
               }
+            },
+            Broker: {
+              select: {
+                licenseNumber: true,
+              }
             }
           },
         },
@@ -298,6 +320,13 @@ export class PropertyService {
           select: {
             id: true,
             phoneNumber: true,
+            role: true,
+            Broker: {
+              select: {
+                licenseNumber: true,
+                isLicensed: true,
+              }
+            }
           },
         },
         project: true,
@@ -315,8 +344,16 @@ export class PropertyService {
       owner: {
         id: property.owner.id,
         phoneNumber: property.owner.phoneNumber,
-        companyName: property.owner.Owner?.companyName || property.owner.Developer?.companyName
-      }
+        companyName: property.owner.Owner?.companyName || property.owner.Developer?.companyName,
+        role: property.owner.role
+      },
+      broker: property.broker ? {
+        id: property.broker.id,
+        phoneNumber: property.broker.phoneNumber,
+        role: property.broker.role,
+        licenseNumber: property.broker.Broker?.licenseNumber,
+        isLicensed: property.broker.Broker?.isLicensed
+      } : null
     };
   }
 
@@ -364,8 +401,8 @@ export class PropertyService {
       throw new NotFoundException('User not found');
     }
 
-    if (user.role !== 'OWNER' && user.role !== 'DEVELOPER') {
-      throw new BadRequestException('Only owners and developers can create properties');
+    if (user.role !== 'OWNER' && user.role !== 'DEVELOPER' && user.role !== 'BROKER') {
+      throw new BadRequestException('Only owners, developers and brokers can create properties');
     }
 
     // Use transaction to ensure all properties are created or none
@@ -396,6 +433,7 @@ export class PropertyService {
                 select: {
                   id: true,
                   phoneNumber: true,
+                  role: true,
                   Owner: {
                     select: {
                       companyName: true
@@ -412,6 +450,11 @@ export class PropertyService {
                 select: {
                   id: true,
                   phoneNumber: true,
+                  Broker: {
+                    select: {
+                      licenseNumber: true
+                    }
+                  }
                 },
               },
               project: true,
@@ -424,8 +467,12 @@ export class PropertyService {
             owner: {
               id: property.owner.id,
               phoneNumber: property.owner.phoneNumber,
-              companyName: property.owner.Owner?.companyName || property.owner.Developer?.companyName
-            }
+              companyName: property.owner.Owner?.companyName || property.owner.Developer?.companyName,
+              role: property.owner.role
+            },
+            broker: property.broker ? {
+              licenseNumber: property.broker.Broker?.licenseNumber,
+            } : null
           };
         })
       );

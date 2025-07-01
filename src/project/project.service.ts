@@ -215,7 +215,11 @@ export class ProjectService {
       sortOrder = SortOrder.DESC,
       ...filters 
     } = filterDto;
-    const skip = (page - 1) * limit;
+    
+    // Convert string values to numbers for pagination
+    const pageNum = typeof page === 'string' ? parseInt(page, 10) : page;
+    const limitNum = typeof limit === 'string' ? parseInt(limit, 10) : limit;
+    const skip = (pageNum - 1) * limitNum;
 
     const where: Prisma.ProjectWhereInput = {};
 
@@ -238,7 +242,7 @@ export class ProjectService {
       this.prisma.project.findMany({
         where,
         skip,
-        take: limit,
+        take: limitNum,
         include: {
           developer: {
             select: {
@@ -280,9 +284,10 @@ export class ProjectService {
       data: projectsWithStats,
       meta: {
         total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit)
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum),
+        hasMorePages: pageNum < Math.ceil(total / limitNum),
       }
     };
   }
