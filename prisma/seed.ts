@@ -222,7 +222,9 @@ async function main() {
   for (const project of projects) {
     const propertiesInProject = faker.number.int({ min: 3, max: 8 });
     for (let i = 0; i < propertiesInProject; i++) {
-      const randomOwner = users.owner[Math.floor(Math.random() * users.owner.length)];
+      // Use random users with different roles as owners (OWNER, DEVELOPER, BROKER)
+      const allPotentialOwners = [...users.owner, ...users.developer, ...users.broker];
+      const randomOwner = allPotentialOwners[Math.floor(Math.random() * allPotentialOwners.length)];
       const randomBroker = users.broker[Math.floor(Math.random() * users.broker.length)];
       await prisma.property.create({
         data: generateProperty(randomOwner.id, randomBroker.id, project.id),
@@ -234,7 +236,9 @@ async function main() {
   // Create some standalone properties (not in projects)
   const standaloneProperties = 10;
   for (let i = 0; i < standaloneProperties; i++) {
-    const randomOwner = users.owner[Math.floor(Math.random() * users.owner.length)];
+    // Use random users with different roles as owners (OWNER, DEVELOPER, BROKER)
+    const allPotentialOwners = [...users.owner, ...users.developer, ...users.broker];
+    const randomOwner = allPotentialOwners[Math.floor(Math.random() * allPotentialOwners.length)];
     const randomBroker = users.broker[Math.floor(Math.random() * users.broker.length)];
     await prisma.property.create({
       data: generateProperty(randomOwner.id, randomBroker.id),
