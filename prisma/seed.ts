@@ -73,7 +73,7 @@ const generateUser = (role: Role) => {
   }
 };
 
-const generateProperty = (ownerId: string, brokerId: string) => {
+const generateProperty = (ownerId: string, brokerId: string, projectId?: string) => {
   const mediaUrls = Array.from({ length: faker.number.int({ min: 1, max: 5 }) }, () => ({
     url: faker.image.url(),
     key: `properties/${Date.now()}-${faker.string.uuid()}.jpg`,
@@ -112,6 +112,7 @@ const generateProperty = (ownerId: string, brokerId: string) => {
     locationLng: faker.location.longitude(),
     ownerId,
     brokerId,
+    ...(projectId && { projectId }),
     media: {
       create: [...mediaUrls, ...videoUrls],
     },
@@ -206,22 +207,39 @@ async function main() {
   }
 
   // Create projects
+  const projects: any[] = [];
   for (const developer of users.developer) {
     for (let i = 0; i < config.projectsPerDeveloper; i++) {
-      await prisma.project.create({
+      const project = await prisma.project.create({
         data: generateProject(developer.id),
       });
+      projects.push(project);
     }
   }
 
-  // Create properties
-  for (const owner of users.owner) {
-    for (let i = 0; i < config.propertiesPerOwner; i++) {
+  // Create properties inside projects
+  let totalProperties = 0;
+  for (const project of projects) {
+    const propertiesInProject = faker.number.int({ min: 3, max: 8 });
+    for (let i = 0; i < propertiesInProject; i++) {
+      const randomOwner = users.owner[Math.floor(Math.random() * users.owner.length)];
       const randomBroker = users.broker[Math.floor(Math.random() * users.broker.length)];
       await prisma.property.create({
-        data: generateProperty(owner.id, randomBroker.id),
+        data: generateProperty(randomOwner.id, randomBroker.id, project.id),
       });
+      totalProperties++;
     }
+  }
+
+  // Create some standalone properties (not in projects)
+  const standaloneProperties = 10;
+  for (let i = 0; i < standaloneProperties; i++) {
+    const randomOwner = users.owner[Math.floor(Math.random() * users.owner.length)];
+    const randomBroker = users.broker[Math.floor(Math.random() * users.broker.length)];
+    await prisma.property.create({
+      data: generateProperty(randomOwner.id, randomBroker.id),
+    });
+    totalProperties++;
   }
 
   console.log('Database has been seeded. 🌱');
@@ -231,7 +249,7 @@ async function main() {
   console.log(`- ${users.broker.length} broker users`);
   console.log(`- ${users.developer.length} developer users`);
   console.log(`- ${users.buyer.length} buyer users`);
-  console.log(`- ${users.owner.length * config.propertiesPerOwner} properties`);
+  console.log(`- ${totalProperties} properties`);
   console.log(`- ${users.developer.length * config.projectsPerDeveloper} projects`);
 }
 
