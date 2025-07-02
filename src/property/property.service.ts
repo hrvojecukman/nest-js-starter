@@ -52,6 +52,7 @@ export class PropertyService {
           select: {
             id: true,
             phoneNumber: true,
+            name: true,
             Owner: {
               select: {
                 companyName: true
@@ -78,9 +79,15 @@ export class PropertyService {
     // Transform the response to flatten the owner structure
     return {
       ...property,
+      price: Number(property.price),
+      media: property.media.map(media => ({
+        url: media.url,
+        type: media.type
+      })),
       owner: {
         id: property.owner.id,
         phoneNumber: property.owner.phoneNumber,
+        name: property.owner.name,
         companyName: property.owner.Owner?.companyName || property.owner.Developer?.companyName
       }
     };
@@ -203,7 +210,7 @@ export class PropertyService {
           title: true,
           price: true,
           currency: true,
-          cityDis: true,
+          city: true,
           space: true,
           type: true,
           category: true,
@@ -257,7 +264,7 @@ export class PropertyService {
       title: property.title,
       price: Number(property.price),
       currency: property.currency,
-      city: property.cityDis,
+      city: property.city,
       space: property.space,
       type: property.type,
       category: property.category,
@@ -298,6 +305,7 @@ export class PropertyService {
           select: {
             id: true,
             phoneNumber: true,
+            name: true,
             role: true,
             Owner: {
               select: {
@@ -341,9 +349,15 @@ export class PropertyService {
     // Transform the response to flatten the owner structure
     return {
       ...property,
+      price: Number(property.price),
+      media: property.media.map(media => ({
+        url: media.url,
+        type: media.type
+      })),
       owner: {
         id: property.owner.id,
         phoneNumber: property.owner.phoneNumber,
+        name: property.owner.name,
         companyName: property.owner.Owner?.companyName || property.owner.Developer?.companyName,
         role: property.owner.role
       },
@@ -433,6 +447,7 @@ export class PropertyService {
                 select: {
                   id: true,
                   phoneNumber: true,
+                  name: true,
                   role: true,
                   Owner: {
                     select: {
@@ -464,9 +479,15 @@ export class PropertyService {
 
           return {
             ...property,
+            price: Number(property.price),
+            media: property.media.map(media => ({
+              url: media.url,
+              type: media.type
+            })),
             owner: {
               id: property.owner.id,
               phoneNumber: property.owner.phoneNumber,
+              name: property.owner.name,
               companyName: property.owner.Owner?.companyName || property.owner.Developer?.companyName,
               role: property.owner.role
             },

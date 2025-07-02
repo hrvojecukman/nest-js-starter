@@ -51,7 +51,7 @@ export class CreatePropertyDto {
 
   @IsString()
   @IsNotEmpty()
-  cityDis: string;
+  city: string;
 
   @IsString()
   @IsNotEmpty()
@@ -221,7 +221,7 @@ export class PropertyDto {
   currency: string;
   downPaymentPercentage: number;
   cashBackPercentage?: number;
-  cityDis: string;
+  city: string;
   address: string;
   space: number;
   numberOfLivingRooms: number;

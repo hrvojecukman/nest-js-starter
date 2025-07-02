@@ -78,6 +78,7 @@ model User {
   id               String   @id @default(uuid())
   email            String?  @unique
   phoneNumber      String   @unique
+  name             String?
   role             Role     @default(BUYER)
   stripeCustomerId String?  @unique
   createdAt        DateTime @default(now())
@@ -161,7 +162,7 @@ model Property {
   currency              String
   downPaymentPercentage Int
   cashBackPercentage    Int?
-  cityDis               String
+  city                  String
   address               String
   space                 Int
   numberOfLivingRooms   Int

@@ -22,6 +22,7 @@ const generateUser = (role: Role) => {
   const baseUser = {
     email: faker.internet.email(),
     phoneNumber: faker.phone.number({ style: 'international' }),
+    name: faker.person.fullName(),
     role,
   };
 
@@ -92,7 +93,7 @@ const generateProperty = (ownerId: string, brokerId: string) => {
     currency: 'USD',
     downPaymentPercentage: faker.number.int({ min: 10, max: 30 }),
     cashBackPercentage: faker.number.int({ min: 0, max: 10 }),
-    cityDis: faker.location.city(),
+    city: faker.location.city(),
     address: faker.location.streetAddress(),
     space: faker.number.int({ min: 50, max: 2000 }),
     numberOfLivingRooms: faker.number.int({ min: 0, max: 5 }),
