@@ -23,6 +23,7 @@ const generateUser = (role: Role) => {
     email: faker.internet.email(),
     phoneNumber: faker.phone.number({ style: 'international' }),
     name: faker.person.fullName(),
+    profileImage: faker.image.avatar(),
     role,
   };
 

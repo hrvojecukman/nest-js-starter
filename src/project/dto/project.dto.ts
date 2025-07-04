@@ -14,16 +14,32 @@ export class NearbyPlaceDto {
 }
 
 export class CreateProjectDto {
+  @IsString()
   name: string;
-  description?: string;
+
+  @IsString()
+  description: string;
+
+  @IsString()
   city: string;
+
+  @IsEnum(PropertyType)
   type: PropertyType;
+
+  @IsEnum(PropertyCategory)
   category: PropertyCategory;
+
   infrastructureItems: InfrastructureItem[];
   nearbyPlaces: NearbyPlaceDto[];
 }
 
 export class UpdateProjectDto extends PartialType(CreateProjectDto) {}
+
+export class DeveloperDto {
+  name?: string;
+  profileImage?: string;
+  companyName?: string;
+}
 
 export class ProjectSummaryDto {
   id: string;
@@ -36,7 +52,9 @@ export class ProjectSummaryDto {
   numberOfAvailableUnits: number;
   averageUnitPrice: number;
   percentSold: number;
-  developerName: string;
+  developer: DeveloperDto;
+  amountSold: number;
+  averageUnitSize: number;
 }
 
 export class ProjectDetailDto extends ProjectSummaryDto {

@@ -7,6 +7,151 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id                 String     @id @default(uuid())
+  email              String?    @unique
+  phoneNumber        String     @unique
+  name               String?
+  profileImage       String?
+  role               Role       @default(BUYER)
+  stripeCustomerId   String?    @unique
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+  Broker             Broker?
+  Buyer              Buyer?
+  Developer          Developer?
+  Owner              Owner?
+  payments           Payment[]
+  projects           Project[]  @relation("DeveloperProjects")
+  brokeredProperties Property[] @relation("BrokerProperties")
+  ownedProperties    Property[] @relation("PropertyOwner")
+
+  @@index([phoneNumber])
+}
+
+model Buyer {
+  id       String  @id @default(uuid()) @map("user_id")
+  name     String?
+  lastName String?
+  user     User    @relation(fields: [id], references: [id])
+}
+
+model Developer {
+  id           String  @id @default(uuid()) @map("user_id")
+  isLicensed   Boolean
+  hasWafi      Boolean
+  acceptsBanks Boolean
+  companyName  String?
+  user         User    @relation(fields: [id], references: [id])
+}
+
+model Owner {
+  id          String  @id @default(uuid()) @map("user_id")
+  companyName String?
+  user        User    @relation(fields: [id], references: [id])
+}
+
+model Broker {
+  id            String  @id @default(uuid()) @map("user_id")
+  isLicensed    Boolean
+  licenseNumber String
+  user          User    @relation(fields: [id], references: [id])
+}
+
+model Payment {
+  id                    String        @id @default(cuid())
+  userId                String
+  amount                Float
+  currency              String
+  status                PaymentStatus
+  stripePaymentIntentId String        @unique
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  user                  User          @relation(fields: [userId], references: [id])
+}
+
+model Media {
+  id         String    @id @default(uuid())
+  type       MediaType
+  url        String
+  key        String
+  propertyId String?
+  projectId  String?
+  createdAt  DateTime  @default(now())
+  project    Project?  @relation(fields: [projectId], references: [id])
+  property   Property? @relation(fields: [propertyId], references: [id])
+
+  @@index([propertyId])
+  @@index([projectId])
+}
+
+model Property {
+  id                    String               @id @default(uuid())
+  title                 String
+  description           String
+  price                 Decimal
+  currency              String
+  downPaymentPercentage Int
+  cashBackPercentage    Int?
+  city                  String
+  address               String
+  space                 Int
+  numberOfLivingRooms   Int
+  numberOfRooms         Int
+  numberOfKitchen       Int
+  numberOfWC            Int
+  numberOfFloors        Int
+  streetWidth           Int
+  age                   Int
+  facing                FacingDirection
+  type                  PropertyType
+  category              PropertyCategory
+  unitStatus            UnitStatus
+  infrastructureItems   InfrastructureItem[]
+  locationLat           Float
+  locationLng           Float
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  ownerId               String
+  brokerId              String?
+  projectId             String?
+  media                 Media[]
+  broker                User?                @relation("BrokerProperties", fields: [brokerId], references: [id])
+  owner                 User                 @relation("PropertyOwner", fields: [ownerId], references: [id])
+  project               Project?             @relation(fields: [projectId], references: [id])
+
+  @@index([locationLat, locationLng])
+}
+
+model NearbyPlace {
+  id        String  @id @default(uuid())
+  name      String
+  distance  Float
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id])
+
+  @@index([projectId])
+}
+
+model Project {
+  id                  String               @id @default(uuid())
+  developerId         String
+  name                String
+  description         String
+  city                String
+  type                PropertyType
+  category            PropertyCategory
+  infrastructureItems InfrastructureItem[]
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  media               Media[]
+  nearbyPlaces        NearbyPlace[]
+  developer           User                 @relation("DeveloperProjects", fields: [developerId], references: [id])
+  properties          Property[]
+
+  @@index([developerId])
+}
+
 enum Role {
   BUYER
   DEVELOPER
@@ -72,159 +217,4 @@ enum FacingDirection {
   northWest
   southEast
   southWest
-}
-
-model User {
-  id               String   @id @default(uuid())
-  email            String?  @unique
-  phoneNumber      String   @unique
-  name             String?
-  profileImage     String?
-  role             Role     @default(BUYER)
-  stripeCustomerId String?  @unique
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  Buyer     Buyer?
-  Developer Developer?
-  Owner     Owner?
-  Broker    Broker?
-
-  payments           Payment[]
-  ownedProperties    Property[] @relation("PropertyOwner")
-  brokeredProperties Property[] @relation("BrokerProperties")
-  projects           Project[]  @relation("DeveloperProjects")
-
-  @@index([phoneNumber])
-}
-
-model Buyer {
-  id       String  @id @default(uuid()) @map("user_id")
-  name     String?
-  lastName String?
-  user     User    @relation(fields: [id], references: [id])
-}
-
-model Developer {
-  id           String  @id @default(uuid()) @map("user_id")
-  user         User    @relation(fields: [id], references: [id])
-  isLicensed   Boolean
-  hasWafi      Boolean
-  acceptsBanks Boolean
-  companyName  String?
-}
-
-model Owner {
-  id          String  @id @default(uuid()) @map("user_id")
-  user        User    @relation(fields: [id], references: [id])
-  companyName String?
-}
-
-model Broker {
-  id            String  @id @default(uuid()) @map("user_id")
-  user          User    @relation(fields: [id], references: [id])
-  isLicensed    Boolean
-  licenseNumber String
-}
-
-model Payment {
-  id                    String        @id @default(cuid())
-  userId                String
-  amount                Float
-  currency              String
-  status                PaymentStatus
-  stripePaymentIntentId String        @unique
-  createdAt             DateTime      @default(now())
-  updatedAt             DateTime      @updatedAt
-  user                  User          @relation(fields: [userId], references: [id])
-}
-
-model Media {
-  id         String    @id @default(uuid())
-  type       MediaType // video, virtualTour, 3D, photo
-  url        String // full public S3 URL
-  key        String // S3 key (for deletion)
-  propertyId String?
-  projectId  String?
-  createdAt  DateTime  @default(now())
-
-  property Property? @relation(fields: [propertyId], references: [id])
-  project  Project?  @relation(fields: [projectId], references: [id])
-
-  @@index([propertyId])
-  @@index([projectId])
-}
-
-model Property {
-  id                    String          @id @default(uuid())
-  title                 String
-  description           String
-  price                 Decimal
-  currency              String
-  downPaymentPercentage Int
-  cashBackPercentage    Int?
-  city                  String
-  address               String
-  space                 Int
-  numberOfLivingRooms   Int
-  numberOfRooms         Int
-  numberOfKitchen       Int
-  numberOfWC            Int
-  numberOfFloors        Int
-  streetWidth           Int
-  age                   Int
-  facing                FacingDirection
-
-  type       PropertyType
-  category   PropertyCategory
-  unitStatus UnitStatus
-
-  media               Media[]
-  infrastructureItems InfrastructureItem[]
-
-  locationLat Float
-  locationLng Float
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  ownerId   String
-  brokerId  String?
-  projectId String?
-
-  owner   User     @relation("PropertyOwner", fields: [ownerId], references: [id])
-  broker  User?    @relation("BrokerProperties", fields: [brokerId], references: [id])
-  project Project? @relation(fields: [projectId], references: [id])
-
-  @@index([locationLat, locationLng])
-}
-
-model NearbyPlace {
-  id        String  @id @default(uuid())
-  name      String
-  distance  Float
-  projectId String
-  project   Project @relation(fields: [projectId], references: [id])
-
-  @@index([projectId])
-}
-
-model Project {
-  id                  String               @id @default(uuid())
-  developerId         String
-  name                String
-  description         String?
-  city                String
-  type                PropertyType
-  category            PropertyCategory
-  infrastructureItems InfrastructureItem[]
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
-
-  developer    User          @relation("DeveloperProjects", fields: [developerId], references: [id])
-  properties   Property[]
-  nearbyPlaces NearbyPlace[]
-  media        Media[]
-
-  @@index([developerId])
 }

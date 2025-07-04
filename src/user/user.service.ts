@@ -23,6 +23,8 @@ export class UserService {
         id: true,
         email: true,
         phoneNumber: true,
+        name: true,
+        profileImage: true,
         role: true,
         createdAt: true,
         Buyer: {
@@ -72,6 +74,8 @@ export class UserService {
       id: user.id,
       email: user.email,
       phoneNumber: user.phoneNumber,
+      name: user.name,
+      profileImage: user.profileImage,
       role: user.role,
       createdAt: user.createdAt,
       ...roleDetails,

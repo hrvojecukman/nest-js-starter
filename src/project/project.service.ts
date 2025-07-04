@@ -7,6 +7,40 @@ import { S3Service } from '../s3/s3.service';
 import { ProjectFilterDto } from './dto/project.dto';
 import { ProjectSortField, SortOrder } from './dto/project.dto';
 
+// Type definitions for cleaner code
+type DeveloperWithCompany = {
+  name: string | null;
+  profileImage: string | null;
+  Developer: { companyName: string | null } | null;
+};
+
+type PropertyWithRelations = Property & {
+  owner: {
+    id: string;
+    phoneNumber: string;
+    Owner: { companyName: string | null } | null;
+    Developer: { companyName: string | null } | null;
+  };
+  broker: { id: string; phoneNumber: string } | null;
+  media: { url: string; type: string }[];
+};
+
+type ProjectWithRelations = Project & {
+  properties: PropertyWithRelations[];
+  developer: DeveloperWithCompany;
+  nearbyPlaces: { name: string; distance: number }[];
+  media: { url: string; type: MediaType }[];
+};
+
+type ProjectStats = {
+  total: number;
+  available: number;
+  averagePrice: number;
+  percentSold: number;
+  amountSold: number;
+  averageSize: number;
+};
+
 @Injectable()
 export class ProjectService {
   constructor(
@@ -14,105 +48,26 @@ export class ProjectService {
     private readonly s3Service: S3Service,
   ) {}
 
-  private mapPropertyToDto(property: Property & { 
-    owner: { 
-      id: string; 
-      phoneNumber: string; 
-      Owner: { companyName: string | null } | null; 
-      Developer: { companyName: string | null } | null; 
-    }; 
-    broker: { id: string; phoneNumber: string; } | null;
-    media: { url: string; type: string }[];
-  }): PropertyDto {
-    return {
-      ...property,
-      price: Number(property.price),
-      cashBackPercentage: property.cashBackPercentage ?? undefined,
-      owner: {
-        id: property.owner.id,
-        phoneNumber: property.owner.phoneNumber,
-        companyName: property.owner.Owner?.companyName || property.owner.Developer?.companyName || undefined
-      },
-      broker: property.broker ? {
-        id: property.broker.id,
-        phoneNumber: property.broker.phoneNumber
-      } : undefined,
-      media: property.media
-    };
+  // Common authorization check
+  private async checkProjectAccess(projectId: string, userId: string) {
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: { developer: { select: { id: true } } }
+    });
+
+    if (!project) {
+      throw new NotFoundException(`Project with ID ${projectId} not found`);
+    }
+
+    if (project.developer.id !== userId) {
+      throw new ForbiddenException('You can only modify your own projects');
+    }
+
+    return project;
   }
 
-  private calculatePropertyStats(properties: { id: string; price: any; unitStatus: string }[]) {
-    const total = properties.length;
-    const available = properties.filter(p => p.unitStatus === 'available').length;
-    const average = properties.reduce((sum, p) => sum + Number(p.price), 0) / total;
-    const percentSold = total > 0 ? ((total - available) / total) * 100 : 0;
-
-    return { total, available, average, percentSold };
-  }
-
-  private mapProjectToSummaryDto(project: Project & {
-    _count: { properties: number };
-    properties: { id: string; price: any; unitStatus: string }[];
-    developer: { Developer: { companyName: string | null } | null };
-    media: { url: string; type: MediaType }[];
-  }, avgPrice: number | null): ProjectSummaryDto {
-    const { total, available, percentSold } = this.calculatePropertyStats(project.properties);
-
-    return {
-      id: project.id,
-      name: project.name,
-      city: project.city,
-      type: project.type,
-      category: project.category,
-      media: project.media,
-      numberOfUnits: total,
-      numberOfAvailableUnits: available,
-      averageUnitPrice: Number(avgPrice ?? 0),
-      percentSold,
-      developerName: project.developer.Developer?.companyName ?? 'N/A'
-    };
-  }
-
-  private mapProjectToDetailDto(project: Project & {
-    properties: (Property & {
-      owner: { 
-        id: string; 
-        phoneNumber: string; 
-        Owner: { companyName: string | null } | null; 
-        Developer: { companyName: string | null } | null; 
-      };
-      broker: { id: string; phoneNumber: string; } | null;
-      media: { url: string; type: string }[];
-    })[];
-    developer: { Developer: { companyName: string | null } | null };
-    nearbyPlaces: { name: string; distance: number }[];
-    media: { url: string; type: MediaType }[];
-  }): ProjectDetailDto {
-    const { total, available, average, percentSold } = this.calculatePropertyStats(project.properties);
-
-    return {
-      id: project.id,
-      name: project.name,
-      city: project.city,
-      type: project.type,
-      category: project.category,
-      media: project.media,
-      description: project.description ?? '',
-      numberOfUnits: total,
-      numberOfAvailableUnits: available,
-      averageUnitPrice: average,
-      percentSold,
-      developerName: project.developer.Developer?.companyName ?? 'N/A',
-      infrastructureItems: project.infrastructureItems,
-      nearbyPlaces: project.nearbyPlaces.map(place => ({
-        name: place.name,
-        distance: place.distance
-      })),
-      properties: project.properties.map(p => this.mapPropertyToDto(p))
-    };
-  }
-
-  async create(dto: CreateProjectDto, userId: string) {
+  // Common developer role check
+  private async checkDeveloperRole(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { role: true }
@@ -123,17 +78,118 @@ export class ProjectService {
     }
 
     if (user.role !== Role.DEVELOPER) {
-      throw new ForbiddenException('Only developers can create projects');
+      throw new ForbiddenException('Only developers can perform this action');
     }
+  }
 
+  // Simplified mapping functions
+  private mapDeveloperInfo = (developer: DeveloperWithCompany) => ({
+    name: developer.name ?? undefined,
+    profileImage: developer.profileImage ?? undefined,
+    companyName: developer.Developer?.companyName ?? undefined
+  });
+
+  private mapMedia = (media: { url: string; type: string | MediaType }[]) =>
+    media.map(m => ({ url: m.url, type: m.type as MediaType }));
+
+  private mapPropertyToDto = (property: PropertyWithRelations): PropertyDto => ({
+    ...property,
+    price: Number(property.price),
+    cashBackPercentage: property.cashBackPercentage ?? undefined,
+    owner: {
+      id: property.owner.id,
+      phoneNumber: property.owner.phoneNumber,
+      companyName: property.owner.Owner?.companyName || property.owner.Developer?.companyName || undefined
+    },
+    broker: property.broker ? {
+      id: property.broker.id,
+      phoneNumber: property.broker.phoneNumber
+    } : undefined,
+    media: property.media
+  });
+
+  private calculateStats = (properties: PropertyWithRelations[]): ProjectStats => {
+    const total = properties.length;
+    const available = properties.filter(p => p.unitStatus === 'available').length;
+    const sold = total - available;
+    const totalPrice = properties.reduce((sum, p) => sum + Number(p.price), 0);
+    const totalSize = properties.reduce((sum, p) => sum + Number(p.space), 0);
+    
+    return {
+      total,
+      available,
+      averagePrice: total > 0 ? totalPrice / total : 0,
+      averageSize: total > 0 ? totalSize / total : 0,
+      percentSold: total > 0 ? Math.round((sold / total) * 100) : 0,
+      amountSold: properties
+        .filter(p => p.unitStatus !== 'available')
+        .reduce((sum, p) => sum + Number(p.price), 0)
+    };
+  };
+
+  private mapProjectToSummary = (project: Project & {
+    developer: DeveloperWithCompany;
+    media: { url: string; type: MediaType }[];
+  }, stats: ProjectStats) => ({
+    id: project.id,
+    name: project.name,
+    description: project.description,
+    city: project.city,
+    type: project.type,
+    category: project.category,
+    media: this.mapMedia(project.media),
+    numberOfUnits: stats.total,
+    numberOfAvailableUnits: stats.available,
+    amountSold: Number(stats.amountSold),
+    averageUnitPrice: Number(stats.averagePrice),
+    percentSold: stats.percentSold,
+    averageUnitSize: stats.averageSize,
+    developer: this.mapDeveloperInfo(project.developer)
+  });
+
+  private mapProjectToDetailDto = (project: ProjectWithRelations): ProjectDetailDto => {
+    const stats = this.calculateStats(project.properties);
+    const base = this.mapProjectToSummary(project, stats);
+    
+    return {
+      ...base,
+      infrastructureItems: project.infrastructureItems,
+      nearbyPlaces: project.nearbyPlaces.map(place => ({
+        name: place.name,
+        distance: place.distance
+      })),
+      properties: project.properties.map(this.mapPropertyToDto)
+    };
+  };
+
+  // Common include patterns
+  private readonly developerInclude = {
+    developer: {
+      select: {
+        id: true,
+        name: true,
+        profileImage: true,
+        Developer: { select: { companyName: true } }
+      }
+    }
+  };
+
+  private readonly developerSimpleInclude = {
+    developer: {
+      select: {
+        Developer: { select: { companyName: true } }
+      }
+    }
+  };
+
+  async create(dto: CreateProjectDto, userId: string) {
+    await this.checkDeveloperRole(userId);
     const { nearbyPlaces, ...projectData } = dto;
 
     return this.prisma.project.create({
       data: {
         ...projectData,
-        developer: {
-          connect: { id: userId }
-        },
+        developer: { connect: { id: userId } },
         nearbyPlaces: {
           create: nearbyPlaces.map(place => ({
             name: place.name,
@@ -142,48 +198,27 @@ export class ProjectService {
         }
       },
       include: {
-        developer: {
-          select: {
-            Developer: {
-              select: {
-                companyName: true
-              }
-            }
-          }
-        },
+        ...this.developerSimpleInclude,
         nearbyPlaces: true,
         media: true
       }
     });
   }
 
-  async uploadMedia(
-    projectId: string,
-    files: Express.Multer.File[],
-    type: MediaType,
-  ) {
-    const projectExists = await this.prisma.project.findUnique({
+  async uploadMedia(projectId: string, files: Express.Multer.File[], type: MediaType) {
+    await this.prisma.project.findUniqueOrThrow({
       where: { id: projectId },
       select: { id: true }
     });
 
-    if (!projectExists) {
-      throw new NotFoundException(`Project with ID ${projectId} not found`);
-    }
-
-    if (!files || files.length === 0) {
+    if (!files?.length) {
       throw new BadRequestException('No files provided');
     }
 
     const uploadPromises = files.map(async (file) => {
       const { url, key } = await this.s3Service.uploadImage(file, 'projects');
       return this.prisma.media.create({
-        data: {
-          url,
-          key,
-          type,
-          projectId,
-        },
+        data: { url, key, type, projectId }
       });
     });
 
@@ -191,16 +226,14 @@ export class ProjectService {
   }
 
   async deleteMedia(projectId: string, mediaId: string) {
-    const media = await this.prisma.media.findFirst({
-      where: { id: mediaId, projectId },
+    const media = await this.prisma.media.findFirstOrThrow({
+      where: { id: mediaId, projectId }
     });
 
-    if (!media) {
-      throw new NotFoundException('Media not found');
-    }
-
-    await this.s3Service.deleteImage(media.key);
-    await this.prisma.media.delete({ where: { id: mediaId } });
+    await Promise.all([
+      this.s3Service.deleteImage(media.key),
+      this.prisma.media.delete({ where: { id: mediaId } })
+    ]);
 
     return { message: 'Media deleted successfully' };
   }
@@ -216,27 +249,22 @@ export class ProjectService {
       ...filters 
     } = filterDto;
     
-    // Convert string values to numbers for pagination
-    const pageNum = typeof page === 'string' ? parseInt(page, 10) : page;
-    const limitNum = typeof limit === 'string' ? parseInt(limit, 10) : limit;
+    const pageNum = Number(page);
+    const limitNum = Number(limit);
     const skip = (pageNum - 1) * limitNum;
 
-    const where: Prisma.ProjectWhereInput = {};
-
-    if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-      ];
-    }
-
-    if (filters.type) where.type = filters.type;
-    if (filters.category) where.category = filters.category;
-    if (filters.city) where.city = filters.city;
-
-    if (developerId) {
-      where.developerId = developerId;
-    }
+    const where: Prisma.ProjectWhereInput = {
+      ...(search && {
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { description: { contains: search, mode: 'insensitive' } }
+        ]
+      }),
+      ...(filters.type && { type: filters.type }),
+      ...(filters.category && { category: filters.category }),
+      ...(filters.city && { city: filters.city }),
+      ...(developerId && { developerId })
+    };
 
     const [projects, total] = await Promise.all([
       this.prisma.project.findMany({
@@ -244,90 +272,110 @@ export class ProjectService {
         skip,
         take: limitNum,
         include: {
-          developer: {
-            select: {
-              Developer: {
-                select: {
-                  companyName: true
-                }
-              }
-            }
-          },
-          _count: { select: { properties: true } },
-          properties: {
-            select: { 
-              id: true,
-              price: true,
-              unitStatus: true
-            }
-          },
-          nearbyPlaces: true,
+          ...this.developerInclude,
           media: true
         },
-        orderBy: {
-          [sortBy]: sortOrder,
-        },
+        orderBy: { [sortBy]: sortOrder }
       }),
       this.prisma.project.count({ where })
     ]);
 
-    const projectsWithStats = await Promise.all(projects.map(async (p) => {
-      const avg = await this.prisma.property.aggregate({
-        where: { projectId: p.id },
-        _avg: { price: true },
-      });
+    if (!projects.length) {
+      return {
+        data: [],
+        meta: {
+          total,
+          page: pageNum,
+          limit: limitNum,
+          totalPages: Math.ceil(total / limitNum),
+          hasMorePages: pageNum < Math.ceil(total / limitNum)
+        }
+      };
+    }
 
-      return this.mapProjectToSummaryDto(p, avg._avg.price ? Number(avg._avg.price) : null);
-    }));
+    // Single optimized query for all stats
+    const projectIds = projects.map(p => p.id);
+    const [allStats, soldStats] = await Promise.all([
+      this.prisma.property.groupBy({
+        by: ['projectId'],
+        where: { projectId: { in: projectIds } },
+        _count: { id: true },
+        _avg: { price: true, space: true },
+        _sum: { price: true }
+      }),
+      this.prisma.property.groupBy({
+        by: ['projectId'],
+        where: { 
+          projectId: { in: projectIds },
+          unitStatus: { not: 'available' }
+        },
+        _count: { id: true },
+        _sum: { price: true }
+      })
+    ]);
 
+    // Create stats map
+    const statsMap = new Map(
+      allStats.map(stat => [
+        stat.projectId,
+        {
+          total: stat._count.id,
+          averagePrice: Number(stat._avg.price) || 0,
+          averageSize: Number(stat._avg.space) || 0,
+          soldCount: 0,
+          amountSold: 0
+        }
+      ])
+    );
+
+    soldStats.forEach(stat => {
+      const existing = statsMap.get(stat.projectId);
+      if (existing) {
+        existing.soldCount = stat._count.id;
+        existing.amountSold = Number(stat._sum.price) || 0;
+      }
+    });
+
+    const totalPages = Math.ceil(total / limitNum);
     return {
-      data: projectsWithStats,
+      data: projects.map(project => {
+        const stats = statsMap.get(project.id) || { total: 0, averagePrice: 0, averageSize: 0, soldCount: 0, amountSold: 0 };
+                 return this.mapProjectToSummary(project, {
+           total: stats.total,
+           available: stats.total - stats.soldCount,
+           averagePrice: Number(stats.averagePrice),
+           averageSize: Number(stats.averageSize),
+           percentSold: stats.total > 0 ? Math.round((stats.soldCount / stats.total) * 100) : 0,
+           amountSold: Number(stats.amountSold)
+         });
+      }),
       meta: {
         total,
         page: pageNum,
         limit: limitNum,
-        totalPages: Math.ceil(total / limitNum),
-        hasMorePages: pageNum < Math.ceil(total / limitNum),
+        totalPages,
+        hasMorePages: pageNum < totalPages
       }
     };
   }
 
   async findOne(id: string): Promise<ProjectDetailDto> {
-    const project = await this.prisma.project.findUnique({
+    const project = await this.prisma.project.findUniqueOrThrow({
       where: { id },
       include: {
-        developer: {
-          select: {
-            Developer: {
-              select: {
-                companyName: true
-              }
-            }
-          }
-        },
+        ...this.developerInclude,
         properties: {
           include: {
             owner: {
               select: {
                 id: true,
                 phoneNumber: true,
-                Owner: {
-                  select: {
-                    companyName: true
-                  }
-                },
-                Developer: {
-                  select: {
-                    companyName: true
-                  }
-                }
+                Owner: { select: { companyName: true } },
+                Developer: { select: { companyName: true } }
               }
             },
             broker: {
-              select: {
-                id: true,
-                phoneNumber: true
-              }
+              select: { id: true, phoneNumber: true }
             },
             media: true
           }
@@ -337,27 +385,11 @@ export class ProjectService {
       }
     });
 
-    if (!project) {
-      throw new NotFoundException(`Project with ID ${id} not found`);
-    }
-
     return this.mapProjectToDetailDto(project);
   }
 
   async update(id: string, dto: UpdateProjectDto, userId: string) {
-    const project = await this.prisma.project.findUnique({
-      where: { id },
-      select: { developer: { select: { id: true } } }
-    });
-
-    if (!project) {
-      throw new NotFoundException(`Project with ID ${id} not found`);
-    }
-
-    if (project.developer.id !== userId) {
-      throw new ForbiddenException('You can only update your own projects');
-    }
-
+    await this.checkProjectAccess(id, userId);
     const { nearbyPlaces, ...projectData } = dto;
 
     return this.prisma.project.update({
@@ -375,15 +407,7 @@ export class ProjectService {
         })
       },
       include: {
-        developer: {
-          select: {
-            Developer: {
-              select: {
-                companyName: true
-              }
-            }
-          }
-        },
+        ...this.developerSimpleInclude,
         nearbyPlaces: true,
         media: true
       }
@@ -391,44 +415,15 @@ export class ProjectService {
   }
 
   async remove(id: string, userId: string) {
-    const project = await this.prisma.project.findUnique({
-      where: { id },
-      select: { developer: { select: { id: true } } }
-    });
-
-    if (!project) {
-      throw new NotFoundException(`Project with ID ${id} not found`);
-    }
-
-    if (project.developer.id !== userId) {
-      throw new ForbiddenException('You can only delete your own projects');
-    }
-
-    return this.prisma.project.delete({
-      where: { id }
-    });
+    await this.checkProjectAccess(id, userId);
+    return this.prisma.project.delete({ where: { id } });
   }
 
   async addProperties(projectId: string, propertyIds: string[], userId: string) {
-    const project = await this.prisma.project.findUnique({
-      where: { id: projectId },
-      select: { developer: { select: { id: true } } }
-    });
+    await this.checkProjectAccess(projectId, userId);
 
-    if (!project) {
-      throw new NotFoundException(`Project with ID ${projectId} not found`);
-    }
-
-    if (project.developer.id !== userId) {
-      throw new ForbiddenException('You can only add properties to your own projects');
-    }
-
-    // Verify all properties exist and belong to the user
     const properties = await this.prisma.property.findMany({
-      where: {
-        id: { in: propertyIds },
-        ownerId: userId
-      },
+      where: { id: { in: propertyIds }, ownerId: userId },
       select: { id: true }
     });
 
@@ -436,14 +431,9 @@ export class ProjectService {
       throw new NotFoundException('One or more properties not found or not owned by you');
     }
 
-    // Update all properties to be part of the project
     await this.prisma.property.updateMany({
-      where: {
-        id: { in: propertyIds }
-      },
-      data: {
-        projectId
-      }
+      where: { id: { in: propertyIds } },
+      data: { projectId }
     });
 
     return this.findOne(projectId);
