@@ -19,6 +19,7 @@ import {
   FacingDirection,
   MediaType,
   InfrastructureItem,
+  Role,
 } from '@prisma/client';
 
 export class CreatePropertyDto {
@@ -156,6 +157,10 @@ export class PropertyFilterDto {
   @IsOptional()
   @IsEnum(UnitStatus)
   unitStatus?: UnitStatus;
+
+  @IsOptional()
+  @IsEnum(Role)
+  ownerRole?: Role;
 
   @IsOptional()
   @IsNumber()

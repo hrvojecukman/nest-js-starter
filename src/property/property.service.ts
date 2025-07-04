@@ -165,6 +165,7 @@ export class PropertyService {
     if (filters.type) where.type = filters.type;
     if (filters.category) where.category = filters.category;
     if (filters.unitStatus) where.unitStatus = filters.unitStatus;
+    if (filters.ownerRole) where.owner = { role: filters.ownerRole };
     if (filters.minPrice || filters.maxPrice) {
       where.price = {
         ...(filters.minPrice ? { gte: Number(filters.minPrice) } : {}),

@@ -1,5 +1,6 @@
-import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, BadRequestException, UnauthorizedException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { S3Service } from '../s3/s3.service';
 import { Role } from '@prisma/client';
 import {
   OwnerDetailsDto,
@@ -10,7 +11,10 @@ import {
 
 @Injectable()
 export class UserService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly s3Service: S3Service,
+  ) {}
 
   async getUserById(userId: string) {
     const user = await this.prisma.user.findUnique({
@@ -251,5 +255,109 @@ export class UserService {
       default:
         return false;
     }
+  }
+
+  async uploadProfileImage(userId: string, file: Express.Multer.File) {
+    // Check if user exists
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, profileImage: true }
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Delete old profile image if exists
+    if (user.profileImage) {
+      // Extract key from URL (assuming S3 URL format)
+      const oldKey = user.profileImage.split('/').pop();
+      if (oldKey) {
+        try {
+          await this.s3Service.deleteImage(`users/${oldKey}`);
+        } catch (error) {
+          // Ignore error if file doesn't exist
+          console.log('Old profile image not found, skipping deletion');
+        }
+      }
+    }
+
+    // Upload new image
+    const { url, key } = await this.s3Service.uploadImage(file, 'users');
+
+    // Update user profile image
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: { profileImage: url },
+      include: {
+        Buyer: true,
+        Developer: true,
+        Owner: true,
+        Broker: true,
+      },
+    });
+
+    return {
+      ...updatedUser,
+      profileImage: url
+    };
+  }
+
+  async deleteProfileImage(userId: string) {
+    // Check if user exists
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, profileImage: true }
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (!user.profileImage) {
+      throw new BadRequestException('No profile image to delete');
+    }
+
+    // Delete from S3
+    const oldKey = user.profileImage.split('/').pop();
+    if (oldKey) {
+      try {
+        await this.s3Service.deleteImage(`users/${oldKey}`);
+      } catch (error) {
+        console.log('Profile image not found in S3, continuing with database update');
+      }
+    }
+
+    // Update user to remove profile image
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: { profileImage: null },
+      include: {
+        Buyer: true,
+        Developer: true,
+        Owner: true,
+        Broker: true,
+      },
+    });
+
+    return {
+      ...updatedUser,
+      profileImage: null
+    };
+  }
+
+  async getProfileImage(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, profileImage: true }
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return {
+      profileImage: user.profileImage
+    };
   }
 }

@@ -79,6 +79,7 @@ model User {
   email            String?  @unique
   phoneNumber      String   @unique
   name             String?
+  profileImage     String?
   role             Role     @default(BUYER)
   stripeCustomerId String?  @unique
   createdAt        DateTime @default(now())
