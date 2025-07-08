@@ -48,11 +48,13 @@ export class ProjectController {
   }
 
   @Get()
+  @UseGuards(JwtAuthGuard)
   findAll(@Query() filterDto: ProjectFilterDto) {
     return this.projectService.findAll(filterDto);
   }
 
   @Get('developer/:developerId')
+  @UseGuards(JwtAuthGuard)
   findByDeveloperId(
     @Param('developerId') developerId: string,
     @Query() filterDto: ProjectFilterDto,
@@ -61,6 +63,7 @@ export class ProjectController {
   }
 
   @Get(':id')
+  @UseGuards(JwtAuthGuard)
   findOne(@Param('id') id: string) {
     return this.projectService.findOne(id);
   }
