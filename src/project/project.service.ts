@@ -29,7 +29,7 @@ type ProjectWithRelations = Project & {
   properties: PropertyWithRelations[];
   developer: DeveloperWithCompany;
   nearbyPlaces: { name: string; distance: number }[];
-  media: { url: string; type: MediaType }[];
+  media: { url: string; type: MediaType; name?: string | null }[];
 };
 
 type ProjectStats = {
@@ -89,8 +89,8 @@ export class ProjectService {
     companyName: developer.Developer?.companyName ?? undefined
   });
 
-  private mapMedia = (media: { url: string; type: string | MediaType }[]) =>
-    media.map(m => ({ url: m.url, type: m.type as MediaType }));
+  private mapMedia = (media: { url: string; type: string | MediaType; name?: string | null }[]) =>
+    media.map(m => ({ url: m.url, type: m.type as MediaType, name: m.name ?? undefined }));
 
   private mapPropertyToDto = (property: PropertyWithRelations): PropertyDto => ({
     ...property,
@@ -215,10 +215,24 @@ export class ProjectService {
       throw new BadRequestException('No files provided');
     }
 
+    // If uploading documents, only allow PDFs
+    if (type === 'document') {
+      const nonPdf = files.find(file => file.mimetype !== 'application/pdf');
+      if (nonPdf) {
+        throw new BadRequestException('Only PDF files are allowed for document uploads');
+      }
+    }
+
     const uploadPromises = files.map(async (file) => {
       const { url, key } = await this.s3Service.uploadImage(file, 'projects');
       return this.prisma.media.create({
-        data: { url, key, type, projectId }
+        data: { 
+          url, 
+          key, 
+          type, 
+          projectId,
+          name: file.originalname 
+        }
       });
     });
 
@@ -360,32 +374,36 @@ export class ProjectService {
   }
 
   async findOne(id: string): Promise<ProjectDetailDto> {
-    const project = await this.prisma.project.findUniqueOrThrow({
-      where: { id },
-      include: {
-        ...this.developerInclude,
-        properties: {
-          include: {
-            owner: {
-              select: {
-                id: true,
-                phoneNumber: true,
-                Owner: { select: { companyName: true } },
-                Developer: { select: { companyName: true } }
-              }
-            },
-            broker: {
-              select: { id: true, phoneNumber: true }
-            },
-            media: true
-          }
-        },
-        nearbyPlaces: true,
-        media: true
-      }
-    });
+    try {
+      const project = await this.prisma.project.findUniqueOrThrow({
+        where: { id },
+        include: {
+          ...this.developerInclude,
+          properties: {
+            include: {
+              owner: {
+                select: {
+                  id: true,
+                  phoneNumber: true,
+                  Owner: { select: { companyName: true } },
+                  Developer: { select: { companyName: true } }
+                }
+              },
+              broker: {
+                select: { id: true, phoneNumber: true }
+              },
+              media: true
+            }
+          },
+          nearbyPlaces: true,
+          media: true
+        }
+      });
 
-    return this.mapProjectToDetailDto(project);
+      return this.mapProjectToDetailDto(project);
+    } catch (error) {
+      throw new NotFoundException(`Project with ID ${id} not found`);
+    }
   }
 
   async update(id: string, dto: UpdateProjectDto, userId: string) {
@@ -437,5 +455,19 @@ export class ProjectService {
     });
 
     return this.findOne(projectId);
+  }
+
+  async getProjectDocuments(projectId: string) {
+    // Ensure project exists
+    try {
+      await this.prisma.project.findUniqueOrThrow({ where: { id: projectId }, select: { id: true } });
+    } catch (error) {
+      throw new NotFoundException(`Project with ID ${projectId} not found`);
+    }
+    // Fetch only document media
+    return this.prisma.media.findMany({
+      where: { projectId, type: 'document' },
+      select: { id: true, url: true, type: true, key: true, name: true, createdAt: true }
+    });
   }
 } 

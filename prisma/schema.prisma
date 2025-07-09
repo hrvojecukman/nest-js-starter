@@ -75,6 +75,7 @@ model Media {
   type       MediaType
   url        String
   key        String
+  name       String?
   propertyId String?
   projectId  String?
   createdAt  DateTime  @default(now())
@@ -192,6 +193,7 @@ enum MediaType {
   virtualTour
   threeD
   photo
+  document
 }
 
 enum InfrastructureItem {

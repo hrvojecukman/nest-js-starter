@@ -48,13 +48,11 @@ export class ProjectController {
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard)
   findAll(@Query() filterDto: ProjectFilterDto) {
     return this.projectService.findAll(filterDto);
   }
 
   @Get('developer/:developerId')
-  @UseGuards(JwtAuthGuard)
   findByDeveloperId(
     @Param('developerId') developerId: string,
     @Query() filterDto: ProjectFilterDto,
@@ -63,13 +61,16 @@ export class ProjectController {
   }
 
   @Get(':id')
-  @UseGuards(JwtAuthGuard)
   findOne(@Param('id') id: string) {
     return this.projectService.findOne(id);
   }
 
+  @Get(':id/documents')
+  async getProjectDocuments(@Param('id') id: string) {
+    return this.projectService.getProjectDocuments(id);
+  }
+
   @Patch(':id')
-  @UseGuards(JwtAuthGuard)
   update(
     @Param('id') id: string,
     @Body() updateProjectDto: UpdateProjectDto,
@@ -79,7 +80,6 @@ export class ProjectController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard)
   remove(@Param('id') id: string, @Request() req: { user: JwtUser }) {
     return this.projectService.remove(id, req.user.userId);
   }

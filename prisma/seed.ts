@@ -79,12 +79,21 @@ const generateProperty = (ownerId: string, brokerId: string, projectId?: string)
     url: faker.image.url(),
     key: `properties/${Date.now()}-${faker.string.uuid()}.jpg`,
     type: MediaType.photo,
+    name: faker.system.fileName({ extensionCount: 1 }),
   }));
 
   const videoUrls = Array.from({ length: faker.number.int({ min: 0, max: 2 }) }, () => ({
     url: faker.internet.url(),
     key: `properties/${Date.now()}-${faker.string.uuid()}.mp4`,
     type: MediaType.video,
+    name: faker.system.fileName({ extensionCount: 1 }),
+  }));
+
+  const documentUrls = Array.from({ length: faker.number.int({ min: 0, max: 2 }) }, () => ({
+    url: faker.internet.url(),
+    key: `properties/${Date.now()}-${faker.string.uuid()}.pdf`,
+    type: MediaType.document,
+    name: faker.system.fileName({ extensionCount: 1 }),
   }));
 
   return {
@@ -115,7 +124,7 @@ const generateProperty = (ownerId: string, brokerId: string, projectId?: string)
     brokerId,
     ...(projectId && { projectId }),
     media: {
-      create: [...mediaUrls, ...videoUrls],
+      create: [...mediaUrls, ...videoUrls, ...documentUrls],
     },
   };
 };
@@ -125,12 +134,21 @@ const generateProject = (developerId: string) => {
     url: faker.image.url(),
     key: `projects/${Date.now()}-${faker.string.uuid()}.jpg`,
     type: MediaType.photo,
+    name: faker.system.fileName({ extensionCount: 1 }),
   }));
 
   const videoUrls = Array.from({ length: faker.number.int({ min: 0, max: 2 }) }, () => ({
     url: faker.internet.url(),
     key: `projects/${Date.now()}-${faker.string.uuid()}.mp4`,
     type: MediaType.video,
+    name: faker.system.fileName({ extensionCount: 1 }),
+  }));
+
+  const documentUrls = Array.from({ length: faker.number.int({ min: 1, max: 3 }) }, () => ({
+    url: faker.internet.url(),
+    key: `projects/${Date.now()}-${faker.string.uuid()}.pdf`,
+    type: MediaType.document,
+    name: faker.system.fileName({ extensionCount: 1 }),
   }));
 
   return {
@@ -142,7 +160,7 @@ const generateProject = (developerId: string) => {
     infrastructureItems: getRandomEnums(InfrastructureItem, faker.number.int({ min: 2, max: 6 })),
     developerId,
     media: {
-      create: [...mediaUrls, ...videoUrls],
+      create: [...mediaUrls, ...videoUrls, ...documentUrls],
     },
     nearbyPlaces: {
       create: Array.from({ length: faker.number.int({ min: 3, max: 8 }) }, () => ({

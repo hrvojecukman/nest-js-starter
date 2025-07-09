@@ -6,6 +6,7 @@ import { IsOptional, IsString, IsEnum, IsNumber } from 'class-validator';
 export class MediaDto {
   url: string;
   type: MediaType;
+  name?: string;
 }
 
 export class NearbyPlaceDto {
