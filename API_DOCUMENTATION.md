@@ -9,6 +9,13 @@
 - [Users Management](#-users-management-users---admin-only)
 - [Projects](#-projects-projects)
 - [Properties](#-properties-properties)
+- [Payments](#-payments-payments)
+- [Reservations](#-reservations-reservations)
+- [Refunds](#-refunds-refunds)
+- [Payment Providers](#-payment-providers-payment-providers)
+- [Payment Analytics](#-payment-analytics-payment-analytics)
+- [Notifications](#-notifications-notifications)
+- [Push Notifications](#-push-notifications-push-notifications)
 - [Verification](#-verification-verification)
 - [Admin](#-admin-admin)
 - [Root](#-root-)
@@ -87,6 +94,129 @@
 | `DELETE` | `/properties/:id`                        | Delete property                | ✅            |
 | `POST`   | `/properties/:id/media/:type`            | Upload property media          | ✅            |
 | `DELETE` | `/properties/:propertyId/media/:mediaId` | Delete property media          | ✅            |
+
+---
+
+## 💳 Payments (`/payments`)
+
+| Method  | Endpoint                         | Description                        | Auth Required | Role Required |
+| ------- | -------------------------------- | ---------------------------------- | ------------- | ------------- |
+| `POST`  | `/payments/create`               | Create payment session             | ✅            | -             |
+| `POST`  | `/payments/create-bulk`          | Create multiple payment sessions   | ✅            | -             |
+| `GET`   | `/payments`                      | Get user payments (paginated)      | ✅            | -             |
+| `GET`   | `/payments/:id`                  | Get payment details                | ✅            | -             |
+| `GET`   | `/payments/property/:propertyId` | Get payments for specific property | ✅            | -             |
+| `GET`   | `/payments/status/:status`       | Get payments by status             | ✅            | -             |
+| `PATCH` | `/payments/:id/update-status`    | Update payment status              | ✅            | `ADMIN`       |
+| `POST`  | `/payments/:id/refund`           | Process refund                     | ✅            | -             |
+| `POST`  | `/payments/:id/partial-refund`   | Process partial refund             | ✅            | -             |
+| `GET`   | `/payments/:id/refunds`          | Get payment refunds                | ✅            | -             |
+| `POST`  | `/payments/:id/cancel`           | Cancel pending payment             | ✅            | -             |
+| `POST`  | `/payments/:id/retry`            | Retry failed payment               | ✅            | -             |
+| `GET`   | `/payments/analytics/summary`    | Get payment analytics summary      | ✅            | `ADMIN`       |
+| `GET`   | `/payments/analytics/revenue`    | Get revenue analytics              | ✅            | `ADMIN`       |
+| `GET`   | `/payments/analytics/provider`   | Get provider performance analytics | ✅            | `ADMIN`       |
+| `POST`  | `/payments/webhook`              | Handle payment webhooks            | ❌            | -             |
+| `POST`  | `/payments/webhook/test`         | Test webhook endpoint              | ✅            | `ADMIN`       |
+
+---
+
+## 🏠 Reservations (`/reservations`)
+
+| Method   | Endpoint                               | Description                       | Auth Required |
+| -------- | -------------------------------------- | --------------------------------- | ------------- | ------- |
+| `POST`   | `/reservations/create`                 | Create property reservation       | ✅            |
+| `GET`    | `/reservations`                        | Get user reservations (paginated) | ✅            |
+| `GET`    | `/reservations/:id`                    | Get reservation details           | ✅            |
+| `GET`    | `/reservations/property/:propertyId`   | Get reservations for property     | ✅            |
+| `PATCH`  | `/reservations/:id/extend`             | Extend reservation expiry         | ✅            |
+| `DELETE` | `/reservations/:id`                    | Cancel reservation                | ✅            |
+| `POST`   | `/reservations/:id/convert-to-payment` | Convert reservation to payment    | ✅            |
+| `GET`    | `/reservations/expired`                | Get expired reservations          | ✅            | `ADMIN` |
+| `POST`   | `/reservations/cleanup-expired`        | Clean up expired reservations     | ✅            | `ADMIN` |
+
+---
+
+## 💰 Refunds (`/refunds`)
+
+| Method | Endpoint                      | Description                      | Auth Required | Role Required |
+| ------ | ----------------------------- | -------------------------------- | ------------- | ------------- |
+| `GET`  | `/refunds`                    | Get all refunds (paginated)      | ✅            | `ADMIN`       |
+| `GET`  | `/refunds/:id`                | Get refund details               | ✅            | -             |
+| `GET`  | `/refunds/payment/:paymentId` | Get refunds for specific payment | ✅            | -             |
+| `POST` | `/refunds/:id/approve`        | Approve refund request           | ✅            | `ADMIN`       |
+| `POST` | `/refunds/:id/reject`         | Reject refund request            | ✅            | `ADMIN`       |
+| `GET`  | `/refunds/analytics/summary`  | Get refund analytics             | ✅            | `ADMIN`       |
+| `POST` | `/refunds/bulk-approve`       | Approve multiple refunds         | ✅            | `ADMIN`       |
+
+---
+
+## 🏦 Payment Providers (`/payment-providers`)
+
+| Method  | Endpoint                            | Description                     | Auth Required | Role Required |
+| ------- | ----------------------------------- | ------------------------------- | ------------- | ------------- |
+| `GET`   | `/payment-providers`                | Get available payment providers | ❌            | -             |
+| `GET`   | `/payment-providers/:provider`      | Get provider configuration      | ✅            | `ADMIN`       |
+| `PATCH` | `/payment-providers/:provider`      | Update provider configuration   | ✅            | `ADMIN`       |
+| `POST`  | `/payment-providers/:provider/test` | Test provider connection        | ✅            | `ADMIN`       |
+| `GET`   | `/payment-providers/status`         | Get provider status             | ✅            | `ADMIN`       |
+| `POST`  | `/payment-providers/switch`         | Switch default payment provider | ✅            | `ADMIN`       |
+
+---
+
+## 📊 Payment Analytics (`/payment-analytics`)
+
+| Method | Endpoint                        | Description                  | Auth Required | Role Required |
+| ------ | ------------------------------- | ---------------------------- | ------------- | ------------- |
+| `GET`  | `/payment-analytics/dashboard`  | Get payment dashboard data   | ✅            | `ADMIN`       |
+| `GET`  | `/payment-analytics/revenue`    | Get revenue breakdown        | ✅            | `ADMIN`       |
+| `GET`  | `/payment-analytics/conversion` | Get payment conversion rates | ✅            | `ADMIN`       |
+| `GET`  | `/payment-analytics/methods`    | Get payment method usage     | ✅            | `ADMIN`       |
+| `GET`  | `/payment-analytics/providers`  | Get provider performance     | ✅            | `ADMIN`       |
+| `GET`  | `/payment-analytics/refunds`    | Get refund analytics         | ✅            | `ADMIN`       |
+| `GET`  | `/payment-analytics/export`     | Export payment data          | ✅            | `ADMIN`       |
+
+---
+
+## 🔔 Notifications (`/notifications`)
+
+| Method   | Endpoint                          | Description                            | Auth Required | Role Required |
+| -------- | --------------------------------- | -------------------------------------- | ------------- | ------------- |
+| `POST`   | `/notifications/send`             | Send notification to specific user     | ✅            | `ADMIN`       |
+| `POST`   | `/notifications/send-bulk`        | Send notification to multiple users    | ✅            | `ADMIN`       |
+| `POST`   | `/notifications/send-to-role`     | Send notification to user role         | ✅            | `ADMIN`       |
+| `POST`   | `/notifications/send-to-all`      | Send notification to all users         | ✅            | `ADMIN`       |
+| `POST`   | `/notifications/send-to-property` | Send notification to property buyers   | ✅            | `ADMIN`       |
+| `POST`   | `/notifications/send-to-project`  | Send notification to project followers | ✅            | `ADMIN`       |
+| `GET`    | `/notifications`                  | Get user notifications (paginated)     | ✅            | -             |
+| `GET`    | `/notifications/:id`              | Get notification details               | ✅            | -             |
+| `PATCH`  | `/notifications/:id/read`         | Mark notification as read              | ✅            | -             |
+| `PATCH`  | `/notifications/read-all`         | Mark all notifications as read         | ✅            | -             |
+| `DELETE` | `/notifications/:id`              | Delete notification                    | ✅            | -             |
+| `DELETE` | `/notifications/clear-all`        | Clear all user notifications           | ✅            | -             |
+| `GET`    | `/notifications/unread-count`     | Get unread notification count          | ✅            | -             |
+| `GET`    | `/notifications/sent`             | Get sent notifications (admin)         | ✅            | `ADMIN`       |
+| `GET`    | `/notifications/analytics`        | Get notification analytics             | ✅            | `ADMIN`       |
+| `POST`   | `/notifications/templates`        | Create notification template           | ✅            | `ADMIN`       |
+| `GET`    | `/notifications/templates`        | Get notification templates             | ✅            | `ADMIN`       |
+| `PATCH`  | `/notifications/templates/:id`    | Update notification template           | ✅            | `ADMIN`       |
+| `DELETE` | `/notifications/templates/:id`    | Delete notification template           | ✅            | `ADMIN`       |
+| `POST`   | `/notifications/test`             | Test notification delivery             | ✅            | `ADMIN`       |
+
+---
+
+## 📱 Push Notifications (`/push-notifications`)
+
+| Method   | Endpoint                          | Description                            | Auth Required | Role Required |
+| -------- | --------------------------------- | -------------------------------------- | ------------- | ------------- |
+| `POST`   | `/push-notifications/register`    | Register device for push notifications | ✅            | -             |
+| `DELETE` | `/push-notifications/unregister`  | Unregister device                      | ✅            | -             |
+| `GET`    | `/push-notifications/devices`     | Get user's registered devices          | ✅            | -             |
+| `PATCH`  | `/push-notifications/preferences` | Update notification preferences        | ✅            | -             |
+| `GET`    | `/push-notifications/preferences` | Get notification preferences           | ✅            | -             |
+| `POST`   | `/push-notifications/send`        | Send push notification                 | ✅            | `ADMIN`       |
+| `POST`   | `/push-notifications/send-bulk`   | Send bulk push notifications           | ✅            | `ADMIN`       |
+| `GET`    | `/push-notifications/analytics`   | Get push notification analytics        | ✅            | `ADMIN`       |
 
 ---
 
@@ -253,6 +383,124 @@ Points of interest near projects.
 
 - `project` - Many-to-one with Project
 
+#### 💳 Payment Entity
+
+Payment transactions with multi-provider support and refund tracking.
+
+| Field            | Type              | Description            | Constraints            |
+| ---------------- | ----------------- | ---------------------- | ---------------------- |
+| `id`             | `String`          | Unique identifier      | `@id @default(uuid())` |
+| `userId`         | `String`          | User ID                | Foreign key            |
+| `propertyId`     | `String`          | Property ID            | Foreign key            |
+| `amount`         | `Decimal`         | Payment amount         | -                      |
+| `currency`       | `String`          | Payment currency       | `@default("SAR")`      |
+| `status`         | `PaymentStatus`   | Payment status         | `@default(pending)`    |
+| `method`         | `PaymentMethod`   | Payment method         | `@default(card)`       |
+| `provider`       | `PaymentProvider` | Payment provider       | -                      |
+| `externalId`     | `String`          | Provider reference ID  | -                      |
+| `reference`      | `String?`         | Internal tracking code | -                      |
+| `rawPayload`     | `Json?`           | Provider response data | -                      |
+| `refundedAmount` | `Decimal?`        | Total refunded amount  | -                      |
+| `createdAt`      | `DateTime`        | Creation timestamp     | `@default(now())`      |
+| `updatedAt`      | `DateTime`        | Update timestamp       | `@updatedAt`           |
+
+**Relationships:**
+
+- `user` - Many-to-one with User
+- `property` - Many-to-one with Property
+- `refunds` - One-to-many with Refund
+
+#### 🔁 Refund Entity
+
+Refund records linked to payments.
+
+| Field        | Type       | Description        | Constraints            |
+| ------------ | ---------- | ------------------ | ---------------------- |
+| `id`         | `String`   | Unique identifier  | `@id @default(uuid())` |
+| `paymentId`  | `String`   | Payment ID         | Foreign key            |
+| `amount`     | `Decimal`  | Refund amount      | -                      |
+| `reason`     | `String?`  | Refund reason      | -                      |
+| `externalId` | `String?`  | Provider refund ID | -                      |
+| `createdAt`  | `DateTime` | Refund timestamp   | `@default(now())`      |
+
+**Relationships:**
+
+- `payment` - Many-to-one with Payment
+
+#### ⏳ Reservation Entity
+
+Property reservations with automatic expiration.
+
+| Field        | Type       | Description        | Constraints            |
+| ------------ | ---------- | ------------------ | ---------------------- |
+| `id`         | `String`   | Unique identifier  | `@id @default(uuid())` |
+| `userId`     | `String`   | User ID            | Foreign key            |
+| `propertyId` | `String`   | Property ID        | Foreign key            |
+| `expiresAt`  | `DateTime` | Reservation expiry | -                      |
+
+**Relationships:**
+
+- `user` - Many-to-one with User
+- `property` - Many-to-one with Property
+
+#### 🔔 Notification Entity
+
+In-app notifications stored in database.
+
+| Field         | Type                   | Description                  | Constraints            |
+| ------------- | ---------------------- | ---------------------------- | ---------------------- |
+| `id`          | `String`               | Unique identifier            | `@id @default(uuid())` |
+| `userId`      | `String`               | Target user ID               | Foreign key            |
+| `title`       | `String`               | Notification title           | -                      |
+| `message`     | `String`               | Notification message         | -                      |
+| `type`        | `NotificationType`     | Notification type            | -                      |
+| `priority`    | `NotificationPriority` | Notification priority        | `@default(normal)`     |
+| `isRead`      | `Boolean`              | Read status                  | `@default(false)`      |
+| `data`        | `Json?`                | Additional notification data | -                      |
+| `scheduledAt` | `DateTime?`            | Scheduled delivery time      | -                      |
+| `sentAt`      | `DateTime?`            | Actual sent time             | -                      |
+| `readAt`      | `DateTime?`            | Read timestamp               | -                      |
+| `createdAt`   | `DateTime`             | Creation timestamp           | `@default(now())`      |
+
+**Relationships:**
+
+- `user` - Many-to-one with User
+
+#### 📱 Push Notification Device Entity
+
+Device registration for push notifications.
+
+| Field         | Type             | Description             | Constraints            |
+| ------------- | ---------------- | ----------------------- | ---------------------- |
+| `id`          | `String`         | Unique identifier       | `@id @default(uuid())` |
+| `userId`      | `String`         | User ID                 | Foreign key            |
+| `deviceToken` | `String`         | FCM device token        | `@unique`              |
+| `platform`    | `DevicePlatform` | Device platform         | -                      |
+| `appVersion`  | `String?`        | App version             | -                      |
+| `isActive`    | `Boolean`        | Device active status    | `@default(true)`       |
+| `lastSeen`    | `DateTime`       | Last activity timestamp | `@default(now())`      |
+| `createdAt`   | `DateTime`       | Registration timestamp  | `@default(now())`      |
+
+**Relationships:**
+
+- `user` - Many-to-one with User
+
+#### 📋 Notification Template Entity
+
+Pre-defined notification templates.
+
+| Field       | Type               | Description            | Constraints            |
+| ----------- | ------------------ | ---------------------- | ---------------------- |
+| `id`        | `String`           | Unique identifier      | `@id @default(uuid())` |
+| `name`      | `String`           | Template name          | -                      |
+| `title`     | `String`           | Template title         | -                      |
+| `message`   | `String`           | Template message       | -                      |
+| `type`      | `NotificationType` | Template type          | -                      |
+| `variables` | `String[]`         | Template variables     | -                      |
+| `isActive`  | `Boolean`          | Template active status | `@default(true)`       |
+| `createdAt` | `DateTime`         | Creation timestamp     | `@default(now())`      |
+| `updatedAt` | `DateTime`         | Update timestamp       | `@updatedAt`           |
+
 ### 👥 Role-Based Profile Entities
 
 #### 🏠 Buyer Profile
@@ -297,12 +545,6 @@ Points of interest near projects.
 - `OWNER` - Property owners
 - `BROKER` - Real estate brokers
 - `ADMIN` - System administrators
-
-#### 💳 Payment Status (`PaymentStatus`)
-
-- `PENDING` - Payment initiated
-- `SUCCEEDED` - Payment completed
-- `FAILED` - Payment failed
 
 #### 🏠 Property Types (`PropertyType`)
 
@@ -358,11 +600,64 @@ Points of interest near projects.
 - `southEast` - Southeast facing
 - `southWest` - Southwest facing
 
+#### 💳 Payment Status (`PaymentStatus`)
+
+- `pending` - Payment created but not completed
+- `succeeded` - Payment completed successfully
+- `failed` - Payment failed
+- `canceled` - Canceled by user or provider
+- `expired` - Session timed out or expired
+- `refunded` - Fully refunded
+- `partial_refund` - Partially refunded
+
+#### 💳 Payment Method (`PaymentMethod`)
+
+- `card` - Credit/debit card payments
+- `bank` - Bank transfer payments
+- `wallet` - Digital wallet payments
+- `applePay` - Apple Pay payments
+
+#### 💳 Payment Provider (`PaymentProvider`)
+
+- `checkout` - Checkout.com integration
+- `stripe` - Stripe integration
+- `tap` - Tap Payments integration
+- `manual` - Admin/manual entries
+
+#### 🔔 Notification Type (`NotificationType`)
+
+- `info` - General information notifications
+- `success` - Success/confirmation notifications
+- `warning` - Warning notifications
+- `error` - Error notifications
+- `payment` - Payment-related notifications
+- `property` - Property-related notifications
+- `project` - Project-related notifications
+- `promotional` - Promotional/marketing notifications
+- `system` - System maintenance notifications
+
+#### 🔔 Notification Priority (`NotificationPriority`)
+
+- `low` - Low priority notifications
+- `normal` - Standard priority notifications
+- `high` - High priority notifications
+- `urgent` - Urgent notifications
+
+#### 📱 Device Platform (`DevicePlatform`)
+
+- `ios` - iOS devices
+- `android` - Android devices
+- `web` - Web browsers
+- `flutter` - Flutter apps
+
 ### 🔗 Database Relationships
 
 ```
 User (1) ←→ (1) Buyer/Developer/Owner/Broker
 User (1) ←→ (N) Payment
+User (1) ←→ (N) Reservation
+User (1) ←→ (N) Notification
+User (1) ←→ (N) PushNotificationDevice
 User (1) ←→ (N) Project (as developer)
 User (1) ←→ (N) Property (as owner)
 User (1) ←→ (N) Property (as broker)
@@ -372,9 +667,18 @@ Project (1) ←→ (N) Media
 Project (1) ←→ (N) NearbyPlace
 
 Property (1) ←→ (N) Media
+Property (1) ←→ (N) Payment
+Property (1) ←→ (N) Reservation
 Property (N) ←→ (1) User (owner)
 Property (N) ←→ (1) User (broker)
 Property (N) ←→ (1) Project
+
+Payment (1) ←→ (N) Refund
+Payment (N) ←→ (1) User
+Payment (N) ←→ (1) Property
+
+Notification (N) ←→ (1) User
+PushNotificationDevice (N) ←→ (1) User
 ```
 
 ### 📊 Database Indexes
@@ -383,12 +687,19 @@ Property (N) ←→ (1) Project
 - **Property**: `locationLat, locationLng` (for geospatial queries)
 - **Media**: `propertyId`, `projectId` (for efficient media retrieval)
 - **NearbyPlace**: `projectId` (for project-specific places)
+- **Payment**: `userId`, `propertyId`, `externalId` (for payment lookups)
+- **Payment**: `userId, propertyId, status` (unique constraint for pending payments)
+- **Notification**: `userId`, `isRead`, `createdAt` (for notification queries)
+- **PushNotificationDevice**: `userId`, `deviceToken`, `isActive` (for device management)
+- **NotificationTemplate**: `isActive` (for active templates)
 
 ### 🔒 Database Constraints
 
+- **Unique Constraints**: Email, phone number, payment external ID, pending payment per user/property
 - **Foreign Key Constraints**: All relationship fields maintain referential integrity
 - **Cascade Deletes**: Media files are deleted when properties/projects are removed
 - **Required Fields**: Essential fields like phone numbers and prices are non-nullable
+- **Payment Constraints**: One pending payment per user per property
 
 ---
 
@@ -421,6 +732,107 @@ Property (N) ←→ (1) Project
 - Media upload endpoints accept up to 10 files
 - Profile image upload accepts single file
 - Documents are restricted to PDF files only
+
+### Payment System
+
+#### Payment Flow
+
+1. **Reservation** - User reserves property (optional, time-limited)
+2. **Payment Creation** - Create payment session with provider
+3. **Payment Processing** - User completes payment via provider
+4. **Webhook Handling** - Provider notifies system of payment status
+5. **Status Update** - System updates payment and property status
+6. **Refund Processing** - Handle refunds if needed
+
+#### Payment Providers
+
+- **Checkout.com** - Primary payment processor
+- **Other..** - Alternative payment processor
+
+#### Payment Methods
+
+- **Card** - Credit/debit card payments
+- **Bank** - Bank transfer payments
+- **Wallet** - Digital wallet payments (Apple Pay, Google Pay)
+- **Apple Pay** - Direct Apple Pay integration
+
+#### Payment Statuses
+
+- **pending** - Payment initiated, awaiting completion
+- **succeeded** - Payment completed successfully
+- **failed** - Payment failed or declined
+- **canceled** - Payment canceled by user or system
+- **expired** - Payment session expired
+- **refunded** - Payment fully refunded
+- **partial_refund** - Payment partially refunded
+
+#### Reservation System
+
+- **Time-limited** - Reservations expire automatically
+- **Convertible** - Reservations can be converted to payments
+- **Extendable** - Users can extend reservation time
+- **Cleanup** - Expired reservations are automatically cleaned up
+
+#### Refund System
+
+- **Full Refunds** - Complete payment refund
+- **Partial Refunds** - Partial payment refund
+- **Approval Workflow** - Admin approval for refunds
+- **Provider Integration** - Automatic refund processing
+
+#### Analytics & Reporting
+
+- **Revenue Tracking** - Real-time revenue analytics
+- **Conversion Rates** - Payment success rates
+- **Provider Performance** - Payment provider metrics
+- **Refund Analytics** - Refund patterns and reasons
+- **Export Capabilities** - Data export for accounting
+
+### Notification System
+
+#### Firebase Integration
+
+The notification system uses **Firebase Cloud Messaging (FCM)** for reliable push notification delivery across all platforms:
+
+- **Firebase Admin SDK** - Server-side notification sending
+- **FCM Tokens** - Device-specific notification targeting
+- **Topic Subscriptions** - Group-based notifications
+- **Cross-Platform Support** - iOS, Android, and Web notifications
+
+#### Notification Types
+
+- **In-App Notifications** - Stored in database, displayed in app
+- **Push Notifications** - Real-time device notifications
+- **Email Notifications** - Email-based notifications (optional)
+- **SMS Notifications** - Text message notifications (optional)
+
+#### Notification Targeting
+
+- **Individual Users** - Send to specific user by ID
+- **User Roles** - Send to all users with specific role (BUYER, DEVELOPER, etc.)
+- **Property Buyers** - Send to users interested in specific property
+- **Project Followers** - Send to users following specific project
+- **Geographic Targeting** - Send to users in specific cities
+- **Bulk Notifications** - Send to multiple users simultaneously
+- **Broadcast** - Send to all users in the system
+
+#### Notification Features
+
+- **Templates** - Pre-defined notification templates for common messages
+- **Scheduling** - Schedule notifications for future delivery
+- **Read Status** - Track notification read/unread status
+- **Analytics** - Notification delivery and engagement metrics
+- **Preferences** - User-configurable notification preferences
+- **Rich Content** - Support for images, links, and custom data
+
+#### Admin Capabilities
+
+- **Custom Messages** - Send personalized notifications
+- **Bulk Operations** - Send to multiple users at once
+- **Template Management** - Create and manage notification templates
+- **Analytics Dashboard** - Monitor notification performance
+- **Testing Tools** - Test notification delivery
+- **Delivery Reports** - Track notification delivery status
 
 ### Pagination
 
