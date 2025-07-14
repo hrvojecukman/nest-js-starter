@@ -14,7 +14,6 @@ model User {
   name               String?
   profileImage       String?
   role               Role       @default(BUYER)
-  stripeCustomerId   String?    @unique
   createdAt          DateTime   @default(now())
   updatedAt          DateTime   @updatedAt
   Broker             Broker?
@@ -59,15 +58,14 @@ model Broker {
 }
 
 model Payment {
-  id                    String        @id @default(cuid())
-  userId                String
-  amount                Float
-  currency              String
-  status                PaymentStatus
-  stripePaymentIntentId String        @unique
-  createdAt             DateTime      @default(now())
-  updatedAt             DateTime      @updatedAt
-  user                  User          @relation(fields: [userId], references: [id])
+  id        String        @id @default(uuid())
+  userId    String
+  amount    Float
+  currency  String
+  status    PaymentStatus
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  user      User          @relation(fields: [userId], references: [id])
 }
 
 model Media {
@@ -75,10 +73,10 @@ model Media {
   type       MediaType
   url        String
   key        String
-  name       String?
   propertyId String?
   projectId  String?
   createdAt  DateTime  @default(now())
+  name       String?
   project    Project?  @relation(fields: [projectId], references: [id])
   property   Property? @relation(fields: [propertyId], references: [id])
 
