@@ -6,7 +6,6 @@ import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { TwilioModule } from './twilio/twilio.module';
 import { UserModule } from './user/user.module';
-import { StripeModule } from './stripe/stripe.module';
 import { AdminModule } from './admin/admin.module';
 import { VerificationModule } from './verification/verification.module';
 import { PropertyModule } from './property/property.module';
@@ -23,7 +22,6 @@ import { UsersModule } from './users/users.module';
     PrismaModule,
     TwilioModule,
     UserModule,
-    StripeModule,
     AdminModule,
     VerificationModule,
     PropertyModule,
