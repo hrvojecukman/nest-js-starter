@@ -145,10 +145,34 @@ model Project {
   updatedAt           DateTime             @updatedAt
   media               Media[]
   nearbyPlaces        NearbyPlace[]
+  timeline            ProjectTimeline[]
   developer           User                 @relation("DeveloperProjects", fields: [developerId], references: [id])
   properties          Property[]
 
   @@index([developerId])
+}
+
+model ProjectTimeline {
+  id           String              @id @default(uuid())
+  projectId    String
+  type         ProjectTimelineType
+  title        String
+  description  String?
+  startDate    DateTime
+  endDate      DateTime?
+  isInProgress Boolean             @default(false)
+  isCompleted  Boolean             @default(false)
+  progress     Int? // 0-100 percentage
+  notes        String?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id])
+
+  @@index([projectId])
+  @@index([type])
+  @@index([startDate])
+  @@index([isInProgress, isCompleted])
 }
 
 enum Role {
@@ -217,4 +241,10 @@ enum FacingDirection {
   northWest
   southEast
   southWest
+}
+
+enum ProjectTimelineType {
+  start
+  underConstruction
+  completed
 }

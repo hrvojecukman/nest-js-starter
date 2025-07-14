@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProjectDto, UpdateProjectDto, ProjectSummaryDto, ProjectDetailDto } from './dto/project.dto';
-import { Role, Prisma, Project, Property, MediaType } from '@prisma/client';
+import { Role, Prisma, Project, Property, MediaType, ProjectTimeline } from '@prisma/client';
 import { PropertyDto } from 'src/property/dto/property.dto';
 import { S3Service } from '../s3/s3.service';
 import { ProjectFilterDto } from './dto/project.dto';
@@ -30,6 +30,7 @@ type ProjectWithRelations = Project & {
   developer: DeveloperWithCompany;
   nearbyPlaces: { name: string; distance: number }[];
   media: { url: string; type: MediaType; name?: string | null }[];
+  timeline: ProjectTimeline[];
 };
 
 type ProjectStats = {
@@ -147,7 +148,7 @@ export class ProjectService {
     developer: this.mapDeveloperInfo(project.developer)
   });
 
-  private mapProjectToDetailDto = (project: ProjectWithRelations): ProjectDetailDto => {
+  private mapProjectToDetailDto = (project: any): ProjectDetailDto => {
     const stats = this.calculateStats(project.properties);
     const base = this.mapProjectToSummary(project, stats);
     
@@ -158,7 +159,21 @@ export class ProjectService {
         name: place.name,
         distance: place.distance
       })),
-      properties: project.properties.map(this.mapPropertyToDto)
+      properties: project.properties.map(this.mapPropertyToDto),
+      timeline: project.timeline ? project.timeline.map(t => ({
+        id: t.id,
+        type: t.type,
+        title: t.title,
+        description: t.description ?? undefined,
+        startDate: t.startDate,
+        endDate: t.endDate ?? undefined,
+        isInProgress: t.isInProgress,
+        isCompleted: t.isCompleted,
+        progress: t.progress ?? undefined,
+        notes: t.notes ?? undefined,
+        createdAt: t.createdAt,
+        updatedAt: t.updatedAt
+      })) : []
     };
   };
 
@@ -184,7 +199,7 @@ export class ProjectService {
 
   async create(dto: CreateProjectDto, userId: string) {
     await this.checkDeveloperRole(userId);
-    const { nearbyPlaces, ...projectData } = dto;
+    const { nearbyPlaces, timeline, ...projectData } = dto;
 
     return this.prisma.project.create({
       data: {
@@ -195,12 +210,28 @@ export class ProjectService {
             name: place.name,
             distance: place.distance
           }))
-        }
+        },
+        ...(timeline && {
+          timeline: {
+            create: timeline.map(item => ({
+              type: item.type as any,
+              title: item.title,
+              description: item.description,
+              startDate: new Date(item.startDate),
+              endDate: item.endDate ? new Date(item.endDate) : null,
+              isInProgress: item.isInProgress ?? false,
+              isCompleted: item.isCompleted ?? false,
+              progress: item.progress,
+              notes: item.notes
+            }))
+          }
+        })
       },
       include: {
         ...this.developerSimpleInclude,
         nearbyPlaces: true,
-        media: true
+        media: true,
+        timeline: true
       }
     });
   }
@@ -396,7 +427,8 @@ export class ProjectService {
             }
           },
           nearbyPlaces: true,
-          media: true
+          media: true,
+          timeline: true
         }
       });
 
@@ -408,7 +440,7 @@ export class ProjectService {
 
   async update(id: string, dto: UpdateProjectDto, userId: string) {
     await this.checkProjectAccess(id, userId);
-    const { nearbyPlaces, ...projectData } = dto;
+    const { nearbyPlaces, timeline, ...projectData } = dto;
 
     return this.prisma.project.update({
       where: { id },
@@ -427,7 +459,8 @@ export class ProjectService {
       include: {
         ...this.developerSimpleInclude,
         nearbyPlaces: true,
-        media: true
+        media: true,
+        timeline: true
       }
     });
   }

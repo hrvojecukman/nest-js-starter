@@ -14,6 +14,18 @@ export class NearbyPlaceDto {
   distance: number;
 }
 
+export class ProjectTimelineDto {
+  type: string;
+  title: string;
+  description?: string;
+  startDate: string;
+  endDate?: string;
+  isInProgress?: boolean;
+  isCompleted?: boolean;
+  progress?: number;
+  notes?: string;
+}
+
 export class CreateProjectDto {
   @IsString()
   name: string;
@@ -32,6 +44,7 @@ export class CreateProjectDto {
 
   infrastructureItems: InfrastructureItem[];
   nearbyPlaces: NearbyPlaceDto[];
+  timeline?: ProjectTimelineDto[];
 }
 
 export class UpdateProjectDto extends PartialType(CreateProjectDto) {}
@@ -63,6 +76,20 @@ export class ProjectDetailDto extends ProjectSummaryDto {
   infrastructureItems: InfrastructureItem[];
   properties: PropertyDto[];
   nearbyPlaces: NearbyPlaceDto[];
+  timeline: {
+    id: string;
+    type: string;
+    title: string;
+    description?: string;
+    startDate: Date;
+    endDate?: Date;
+    isInProgress: boolean;
+    isCompleted: boolean;
+    progress?: number;
+    notes?: string;
+    createdAt: Date;
+    updatedAt: Date;
+  }[];
 }
 
 export enum ProjectSortField {
