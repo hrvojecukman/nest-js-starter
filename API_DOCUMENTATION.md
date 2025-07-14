@@ -1,6 +1,108 @@
 # 🏠 Ousol Real Estate API Documentation
 
-**Base URL:** `http://localhost:3000/api/v1`
+## 🛠️ Tech Stack & Infrastructure
+
+### 🏗️ Backend Technology
+
+| Technology            | Purpose                                                          |
+| --------------------- | ---------------------------------------------------------------- |
+| **NestJS**            | Progressive Node.js framework for building scalable applications |
+| **Node.js**           | Runtime environment for NestJS                                   |
+| **TypeScript**        | Type-safe JavaScript development                                 |
+| **PostgreSQL**        | Primary database                                                 |
+| **Prisma ORM**        | Database toolkit and ORM                                         |
+| **Redis**             | Caching and session storage                                      |
+| **JWT**               | Authentication tokens                                            |
+| **bcrypt**            | Password hashing                                                 |
+| **class-validator**   | Request validation                                               |
+| **class-transformer** | Object transformation                                            |
+
+### 🗄️ Database & Storage
+
+| Service        | Purpose          | Configuration                  |
+| -------------- | ---------------- | ------------------------------ |
+| **PostgreSQL** | Primary database | Connection pooling, migrations |
+| **Redis**      | Caching layer    | Session storage, rate limiting |
+| **AWS S3**     | File storage     | Media files, documents         |
+| **Prisma**     | Database ORM     | Type-safe database queries     |
+
+### 🏗️ NestJS Architecture
+
+| Feature                  | Purpose                                            |
+| ------------------------ | -------------------------------------------------- |
+| **Modules**              | Organized code structure with dependency injection |
+| **Controllers**          | Handle HTTP requests and responses                 |
+| **Services**             | Business logic and data processing                 |
+| **Guards**               | Authentication and authorization                   |
+| **Interceptors**         | Request/response transformation                    |
+| **Pipes**                | Data validation and transformation                 |
+| **Middleware**           | Request processing pipeline                        |
+| **Dependency Injection** | Loose coupling and testability                     |
+
+### 📱 Mobile & Frontend Integration
+
+| Technology                   | Purpose              |
+| ---------------------------- | -------------------- |
+| **Firebase Cloud Messaging** | Push notifications   |
+| **Firebase App Check**       | Mobile app security  |
+| **CORS Configuration**       | Web frontend support |
+
+---
+
+## 🔌 Third-Party Integrations
+
+### 💳 Payment Processors
+
+| Provider         | Integration | Purpose            | Features                               |
+| ---------------- | ----------- | ------------------ | -------------------------------------- |
+| **Checkout.com** | Primary     | Payment processing | Cards, digital wallets, bank transfers |
+| **Manual Entry** | Admin       | Manual payments    | Admin-created payments                 |
+
+### 📱 Push Notifications
+
+| Service                      | Integration | Purpose              | Features                               |
+| ---------------------------- | ----------- | -------------------- | -------------------------------------- |
+| **Firebase Cloud Messaging** | Primary     | Push notifications   | Cross-platform delivery                |
+| **Firebase Admin SDK**       | Server-side | Notification sending | Topic subscriptions, device management |
+
+### 📧 Communication Services
+
+| Service      | Integration | Purpose             | Features                        |
+| ------------ | ----------- | ------------------- | ------------------------------- |
+| **Twilio**   | SMS/OTP     | Phone verification  | OTP delivery, SMS notifications |
+| **SendGrid** | Email       | Email notifications | Transactional emails, marketing |
+
+### ☁️ Cloud Services
+
+| Service         | Integration  | Purpose       | Features                 |
+| --------------- | ------------ | ------------- | ------------------------ |
+| **AWS S3**      | File Storage | Media uploads | Image/video storage, CDN |
+| **Redis Cloud** | Caching      | Performance   | Session storage, caching |
+
+### 🗺️ Location & Maps
+
+| Service             | Integration | Purpose           | Features                        |
+| ------------------- | ----------- | ----------------- | ------------------------------- |
+| **Google Maps API** | Maps        | Location services | Geocoding, distance calculation |
+
+---
+
+## 📊 API Usage & Limits
+
+### 📱 Mobile App Integration
+
+#### Flutter App Requirements
+
+- **Firebase App Check**: Required for API access
+- **JWT Token**: Include in Authorization header
+- **Device Registration**: Register for push notifications
+
+#### Web Frontend Requirements
+
+- **CORS**: Configured for web origins
+- **JWT Storage**: Secure token storage
+
+---
 
 ## 📋 Table of Contents
 
@@ -37,16 +139,21 @@
 
 ## 👤 User Management (`/user`)
 
-| Method   | Endpoint                           | Description                | Auth Required |
-| -------- | ---------------------------------- | -------------------------- | ------------- |
-| `GET`    | `/user/me`                         | Get current user profile   | ✅            |
-| `POST`   | `/user/complete-profile/buyer`     | Complete buyer profile     | ✅            |
-| `POST`   | `/user/complete-profile/owner`     | Complete owner profile     | ✅            |
-| `POST`   | `/user/complete-profile/developer` | Complete developer profile | ✅            |
-| `POST`   | `/user/complete-profile/broker`    | Complete broker profile    | ✅            |
-| `POST`   | `/user/profile-image`              | Upload profile image       | ✅            |
-| `GET`    | `/user/profile-image`              | Get profile image          | ✅            |
-| `DELETE` | `/user/profile-image`              | Delete profile image       | ✅            |
+| Method   | Endpoint                           | Description                  | Auth Required |
+| -------- | ---------------------------------- | ---------------------------- | ------------- |
+| `GET`    | `/user/me`                         | Get current user profile     | ✅            |
+| `PATCH`  | `/user/profile`                    | Update user profile          | ✅            |
+| `POST`   | `/user/complete-profile/buyer`     | Complete buyer profile       | ✅            |
+| `POST`   | `/user/complete-profile/owner`     | Complete owner profile       | ✅            |
+| `POST`   | `/user/complete-profile/developer` | Complete developer profile   | ✅            |
+| `POST`   | `/user/complete-profile/broker`    | Complete broker profile      | ✅            |
+| `PATCH`  | `/user/role-profile`               | Update role-specific profile | ✅            |
+| `POST`   | `/user/profile-image`              | Upload profile image         | ✅            |
+| `GET`    | `/user/profile-image`              | Get profile image            | ✅            |
+| `DELETE` | `/user/profile-image`              | Delete profile image         | ✅            |
+| `PATCH`  | `/user/password`                   | Change password              | ✅            |
+| `PATCH`  | `/user/email`                      | Update email address         | ✅            |
+| `PATCH`  | `/user/phone`                      | Update phone number          | ✅            |
 
 ---
 
