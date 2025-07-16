@@ -45,7 +45,6 @@ export class UserResponseDto {
   email?: string;
   phoneNumber: string;
   role: Role;
-  stripeCustomerId?: string;
   createdAt: Date;
   updatedAt: Date;
   // Developer fields
@@ -53,6 +52,8 @@ export class UserResponseDto {
   hasWafi?: boolean;
   acceptsBanks?: boolean;
   companyName?: string;
+  description?: string;
+  location?: string;
   // Broker fields
   licenseNumber?: string;
   // Buyer fields

@@ -29,7 +29,6 @@ export class UserService {
         createdAt: true,
         Buyer: {
           select: {
-            name: true,
             lastName: true,
           },
         },
@@ -212,9 +211,18 @@ export class UserService {
     if (existingBuyer) {
       return { success: false, message: 'Buyer already exists' };
     }
-    await this.prisma.buyer.create({
-      data: { id: userId, name: details.name, lastName: details.lastName },
-    });
+    
+    // Update both User name and create Buyer record
+    await Promise.all([
+      this.prisma.user.update({
+        where: { id: userId },
+        data: { name: details.name },
+      }),
+      this.prisma.buyer.create({
+        data: { id: userId, lastName: details.lastName },
+      }),
+    ]);
+    
     return { success: true, role: Role.BUYER };
   }
 
@@ -224,7 +232,7 @@ export class UserService {
         const buyer = await this.prisma.buyer.findUnique({
           where: { id: userId },
         });
-        return !!buyer?.name;
+        return !!buyer?.lastName;
       }
 
       case Role.OWNER: {

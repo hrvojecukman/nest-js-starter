@@ -13,7 +13,6 @@ export class UsersService {
       email: user.email || undefined,
       phoneNumber: user.phoneNumber,
       role: user.role,
-      stripeCustomerId: user.stripeCustomerId || undefined,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };
@@ -75,7 +74,7 @@ export class UsersService {
       where.OR = [
         { phoneNumber: { contains: search, mode: 'insensitive' } },
         { email: { contains: search, mode: 'insensitive' } },
-        { Buyer: { name: { contains: search, mode: 'insensitive' } } },
+        { name: { contains: search, mode: 'insensitive' } },
         { Buyer: { lastName: { contains: search, mode: 'insensitive' } } },
         { Developer: { companyName: { contains: search, mode: 'insensitive' } } },
         { Owner: { companyName: { contains: search, mode: 'insensitive' } } },
