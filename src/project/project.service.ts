@@ -8,16 +8,14 @@ import { ProjectFilterDto } from './dto/project.dto';
 import { ProjectSortField, SortOrder } from './dto/project.dto';
 
 // Type definitions for cleaner code
-type DeveloperWithCompany = {
-  name: string | null;
-  profileImage: string | null;
-  Developer: { companyName: string | null } | null;
-};
+
 
 type PropertyWithRelations = Property & {
   owner: {
     id: string;
     phoneNumber: string;
+    name: string;
+    role: string;
     Owner: { companyName: string | null } | null;
     Developer: { companyName: string | null } | null;
   };
@@ -27,7 +25,7 @@ type PropertyWithRelations = Property & {
 
 type ProjectWithRelations = Project & {
   properties: PropertyWithRelations[];
-  developer: DeveloperWithCompany;
+  developer: any; // Will be automatically typed by Prisma
   nearbyPlaces: { name: string; distance: number }[];
   media: { url: string; type: MediaType; name?: string | null }[];
   timeline: ProjectTimeline[];
@@ -84,10 +82,24 @@ export class ProjectService {
   }
 
   // Simplified mapping functions
-  private mapDeveloperInfo = (developer: DeveloperWithCompany) => ({
+  private mapDeveloperInfo = (developer: any) => ({
+    id: developer.id,
     name: developer.name ?? undefined,
     profileImage: developer.profileImage ?? undefined,
-    companyName: developer.Developer?.companyName ?? undefined
+    companyName: developer.Developer?.companyName ?? undefined,
+    isLicensed: developer.Developer?.isLicensed ?? undefined,
+    hasWafi: developer.Developer?.hasWafi ?? undefined,
+    acceptsBanks: developer.Developer?.acceptsBanks ?? undefined,
+    description: developer.Developer?.description ?? undefined,
+    location: developer.Developer?.location ?? undefined,
+    phoneNumber: developer.phoneNumber ?? undefined,
+    email: developer.email ?? undefined,
+  });
+
+  private mapDeveloperSimple = (developer: any) => ({
+    name: developer.name ?? undefined,
+    profileImage: developer.profileImage ?? undefined,
+    companyName: developer.Developer?.companyName ?? undefined,
   });
 
   private mapMedia = (media: { url: string; type: string | MediaType; name?: string | null }[]) =>
@@ -99,8 +111,10 @@ export class ProjectService {
     cashBackPercentage: property.cashBackPercentage ?? undefined,
     owner: {
       id: property.owner.id,
+      name: property.owner.name,
       phoneNumber: property.owner.phoneNumber,
-      companyName: property.owner.Owner?.companyName || property.owner.Developer?.companyName || undefined
+      companyName: property.owner.Owner?.companyName || property.owner.Developer?.companyName || undefined,
+      role: property.owner.role
     },
     broker: property.broker ? {
       id: property.broker.id,
@@ -129,7 +143,7 @@ export class ProjectService {
   };
 
   private mapProjectToSummary = (project: Project & {
-    developer: DeveloperWithCompany;
+    developer: any;
     media: { url: string; type: MediaType }[];
   }, stats: ProjectStats) => ({
     id: project.id,
@@ -145,7 +159,7 @@ export class ProjectService {
     averageUnitPrice: Number(stats.averagePrice),
     percentSold: stats.percentSold,
     averageUnitSize: stats.averageSize,
-    developer: this.mapDeveloperInfo(project.developer)
+    developer: this.mapDeveloperSimple(project.developer)
   });
 
   private mapProjectToDetailDto = (project: any): ProjectDetailDto => {
@@ -154,6 +168,7 @@ export class ProjectService {
     
     return {
       ...base,
+      developer: this.mapDeveloperInfo(project.developer), // Override with full developer info
       infrastructureItems: project.infrastructureItems,
       nearbyPlaces: project.nearbyPlaces.map(place => ({
         name: place.name,
@@ -175,26 +190,6 @@ export class ProjectService {
         updatedAt: t.updatedAt
       })) : []
     };
-  };
-
-  // Common include patterns
-  private readonly developerInclude = {
-    developer: {
-      select: {
-        id: true,
-        name: true,
-        profileImage: true,
-        Developer: { select: { companyName: true } }
-      }
-    }
-  };
-
-  private readonly developerSimpleInclude = {
-    developer: {
-      select: {
-        Developer: { select: { companyName: true } }
-      }
-    }
   };
 
   async create(dto: CreateProjectDto, userId: string) {
@@ -227,12 +222,16 @@ export class ProjectService {
           }
         })
       },
-      include: {
-        ...this.developerSimpleInclude,
-        nearbyPlaces: true,
-        media: true,
-        timeline: true
-      }
+              include: {
+          developer: {
+            include: {
+              Developer: true
+            }
+          },
+          nearbyPlaces: true,
+          media: true,
+          timeline: true
+        }
     });
   }
 
@@ -317,7 +316,11 @@ export class ProjectService {
         skip,
         take: limitNum,
         include: {
-          ...this.developerInclude,
+          developer: {
+            include: {
+              Developer: true
+            }
+          },
           media: true
         },
         orderBy: { [sortBy]: sortOrder }
@@ -409,13 +412,24 @@ export class ProjectService {
       const project = await this.prisma.project.findUniqueOrThrow({
         where: { id },
         include: {
-          ...this.developerInclude,
+          developer: {
+            select: {
+              id: true,
+              email: true,
+              phoneNumber: true,
+              name: true,
+              profileImage: true,
+              Developer: true
+            }
+          },
           properties: {
             include: {
               owner: {
                 select: {
+                  role: true,
                   id: true,
-                  phoneNumber: true,
+                  name: true,
+                  phoneNumber: true,  
                   Owner: { select: { companyName: true } },
                   Developer: { select: { companyName: true } }
                 }
@@ -457,7 +471,11 @@ export class ProjectService {
         })
       },
       include: {
-        ...this.developerSimpleInclude,
+        developer: {
+          select: {
+            Developer: { select: { companyName: true } }
+          }
+        },
         nearbyPlaces: true,
         media: true,
         timeline: true

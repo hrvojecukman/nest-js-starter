@@ -42,6 +42,12 @@ export class CreateProjectDto {
   @IsEnum(PropertyCategory)
   category: PropertyCategory;
 
+  @IsNumber()
+  locationLat: number;
+
+  @IsNumber()
+  locationLng: number;
+
   infrastructureItems: InfrastructureItem[];
   nearbyPlaces: NearbyPlaceDto[];
   timeline?: ProjectTimelineDto[];

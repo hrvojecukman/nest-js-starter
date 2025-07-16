@@ -246,8 +246,10 @@ export class PropertyDto {
   media: { url: string; type: string }[];
   owner: {
     id: string;
+    name: string;
     phoneNumber: string;
     companyName?: string;
+    role: string;
   };
   broker?: {
     id: string;
