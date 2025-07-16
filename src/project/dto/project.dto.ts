@@ -1,7 +1,7 @@
 import { PropertyType, PropertyCategory, InfrastructureItem, MediaType } from '@prisma/client';
 import { PropertyDto } from '../../property/dto/property.dto';
 import { PartialType } from '@nestjs/mapped-types';
-import { IsOptional, IsString, IsEnum, IsNumber } from 'class-validator';
+import { IsOptional, IsString, IsEnum, IsNumber, IsLatitude, IsLongitude, Min } from 'class-validator';
 
 export class MediaDto {
   url: string;
@@ -130,6 +130,21 @@ export class ProjectFilterDto {
   @IsOptional()
   @IsString()
   developerId?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @IsLatitude()
+  lat?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @IsLongitude()
+  lng?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  radius?: number; // in kilometers
 
   @IsOptional()
   @IsEnum(ProjectSortField)

@@ -6,6 +6,7 @@ import { PropertyDto } from 'src/property/dto/property.dto';
 import { S3Service } from '../s3/s3.service';
 import { ProjectFilterDto } from './dto/project.dto';
 import { ProjectSortField, SortOrder } from './dto/project.dto';
+import { calculateBoundingBox } from '../utils/location.utils';
 
 // Type definitions for cleaner code
 
@@ -152,6 +153,8 @@ export class ProjectService {
     city: project.city,
     type: project.type,
     category: project.category,
+    locationLat: project.locationLat,
+    locationLng: project.locationLng,
     media: this.mapMedia(project.media),
     numberOfUnits: stats.total,
     numberOfAvailableUnits: stats.available,
@@ -288,6 +291,9 @@ export class ProjectService {
       limit = 10, 
       search, 
       developerId,
+      lat,
+      lng,
+      radius,
       sortBy = ProjectSortField.CREATED_AT,
       sortOrder = SortOrder.DESC,
       ...filters 
@@ -309,6 +315,18 @@ export class ProjectService {
       ...(filters.city && { city: filters.city }),
       ...(developerId && { developerId })
     };
+
+    // Add location filtering using bounding box
+    if (lat !== undefined && lng !== undefined && radius !== undefined) {
+      const latNum = Number(lat);
+      const lngNum = Number(lng);
+      const radiusNum = Number(radius);
+      const { minLat, maxLat, minLng, maxLng } = calculateBoundingBox(latNum, lngNum, radiusNum);
+      where.AND = [
+        { locationLat: { gte: minLat, lte: maxLat } },
+        { locationLng: { gte: minLng, lte: maxLng } },
+      ];
+    }
 
     const [projects, total] = await Promise.all([
       this.prisma.project.findMany({
