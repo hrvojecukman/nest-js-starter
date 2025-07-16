@@ -1,4 +1,4 @@
-import { PrismaClient, Role, PropertyType, PropertyCategory, UnitStatus, FacingDirection, MediaType, InfrastructureItem } from '@prisma/client';
+import { PrismaClient, Role, PropertyType, PropertyCategory, UnitStatus, FacingDirection, MediaType, InfrastructureItem, ProjectTimelineType } from '@prisma/client';
 import { faker } from '@faker-js/faker';
 
 const prisma = new PrismaClient();
@@ -56,6 +56,8 @@ const generateUser = (role: Role) => {
             hasWafi: faker.datatype.boolean(),
             acceptsBanks: faker.datatype.boolean(),
             companyName: faker.company.name(),
+            description: faker.lorem.paragraph(),
+            location: faker.location.city(),
           },
         },
       };
@@ -64,7 +66,6 @@ const generateUser = (role: Role) => {
         ...baseUser,
         Buyer: {
           create: {
-            name: faker.person.firstName(),
             lastName: faker.person.lastName(),
           },
         },
@@ -151,6 +152,54 @@ const generateProject = (developerId: string) => {
     name: faker.system.fileName({ extensionCount: 1 }),
   }));
 
+  // Generate timeline data
+  const timelineData = [
+    {
+      type: ProjectTimelineType.start,
+      title: 'Project Planning & Permits',
+      description: 'Initial planning phase including permits and approvals',
+      startDate: faker.date.past({ years: 1 }),
+      endDate: faker.date.recent({ days: 30 }),
+      isInProgress: false,
+      isCompleted: true,
+      progress: 100,
+      notes: 'All permits obtained successfully. Planning phase completed on schedule.'
+    },
+    {
+      type: ProjectTimelineType.underConstruction,
+      title: 'Foundation & Structure',
+      description: 'Foundation work and main structure construction',
+      startDate: faker.date.recent({ days: 30 }),
+      endDate: faker.date.future({ years: 1 }),
+      isInProgress: true,
+      isCompleted: false,
+      progress: faker.number.int({ min: 20, max: 80 }),
+      notes: 'Foundation completed. Main structure construction in progress.'
+    },
+    {
+      type: ProjectTimelineType.underConstruction,
+      title: 'Interior & Finishing',
+      description: 'Interior work and final finishing touches',
+      startDate: faker.date.future({ years: 1 }),
+      endDate: faker.date.future({ years: 2 }),
+      isInProgress: false,
+      isCompleted: false,
+      progress: 0,
+      notes: 'Scheduled to begin after structure completion.'
+    },
+    {
+      type: ProjectTimelineType.completed,
+      title: 'Project Completion',
+      description: 'Final inspection and project handover',
+      startDate: faker.date.future({ years: 2 }),
+      endDate: faker.date.future({ years: 2 }),
+      isInProgress: false,
+      isCompleted: false,
+      progress: 0,
+      notes: 'Expected completion date. Final inspection and handover phase.'
+    }
+  ];
+
   return {
     name: faker.company.name(),
     description: faker.commerce.productDescription(),
@@ -158,6 +207,8 @@ const generateProject = (developerId: string) => {
     type: getRandomEnum(PropertyType),
     category: getRandomEnum(PropertyCategory),
     infrastructureItems: getRandomEnums(InfrastructureItem, faker.number.int({ min: 2, max: 6 })),
+    locationLat: faker.location.latitude(),
+    locationLng: faker.location.longitude(),
     developerId,
     media: {
       create: [...mediaUrls, ...videoUrls, ...documentUrls],
@@ -167,6 +218,9 @@ const generateProject = (developerId: string) => {
         name: faker.location.street(),
         distance: faker.number.float({ min: 0.1, max: 5, fractionDigits: 1 }),
       })),
+    },
+    timeline: {
+      create: timelineData,
     },
   };
 };
@@ -274,6 +328,7 @@ async function main() {
   console.log(`- ${users.buyer.length} buyer users`);
   console.log(`- ${totalProperties} properties`);
   console.log(`- ${users.developer.length * config.projectsPerDeveloper} projects`);
+  console.log(`- ${users.developer.length * config.projectsPerDeveloper * 4} project timeline items`);
 }
 
 main()

@@ -30,7 +30,6 @@ model User {
 
 model Buyer {
   id       String  @id @default(uuid()) @map("user_id")
-  name     String?
   lastName String?
   user     User    @relation(fields: [id], references: [id])
 }
@@ -41,6 +40,8 @@ model Developer {
   hasWafi      Boolean
   acceptsBanks Boolean
   companyName  String?
+  description  String?
+  location     String?
   user         User    @relation(fields: [id], references: [id])
 }
 
@@ -141,6 +142,8 @@ model Project {
   type                PropertyType
   category            PropertyCategory
   infrastructureItems InfrastructureItem[]
+  locationLat         Float
+  locationLng         Float
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
   media               Media[]
