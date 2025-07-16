@@ -157,16 +157,16 @@
 
 ---
 
-## 👥 Users Management (`/users`) - Admin Only
+## 👥 Users Management (`/users`)
 
 | Method | Endpoint                | Description               | Auth Required | Role Required |
 | ------ | ----------------------- | ------------------------- | ------------- | ------------- |
 | `GET`  | `/users`                | Get all users (paginated) | ✅            | `ADMIN`       |
 | `GET`  | `/users/:id`            | Get user by ID            | ✅            | `ADMIN`       |
-| `GET`  | `/users/developers`     | Get all developers        | ✅            | Any           |
-| `GET`  | `/users/brokers`        | Get all brokers           | ✅            | Any           |
-| `GET`  | `/users/developers/:id` | Get developer by ID       | ✅            | Any           |
-| `GET`  | `/users/brokers/:id`    | Get broker by ID          | ✅            | Any           |
+| `GET`  | `/users/developers`     | Get all developers        | ❌            | Any           |
+| `GET`  | `/users/brokers`        | Get all brokers           | ❌            | Any           |
+| `GET`  | `/users/developers/:id` | Get developer by ID       | ❌            | Any           |
+| `GET`  | `/users/brokers/:id`    | Get broker by ID          | ❌            | Any           |
 
 ---
 
