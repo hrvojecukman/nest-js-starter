@@ -79,6 +79,8 @@ export class ProjectSummaryDto {
 
 export class ProjectDetailDto extends ProjectSummaryDto {
   description: string;
+  locationLat: number;
+  locationLng: number;
   infrastructureItems: InfrastructureItem[];
   nearbyPlaces: NearbyPlaceDto[];
   timeline: {

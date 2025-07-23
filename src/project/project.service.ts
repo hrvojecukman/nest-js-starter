@@ -353,6 +353,8 @@ export class ProjectService {
         city: project.city,
         type: project.type,
         category: project.category,
+        locationLat: project.locationLat,
+        locationLng: project.locationLng,
         media: this.mapMedia(project.media),
         numberOfUnits: stats.total,
         numberOfAvailableUnits: stats.available,
