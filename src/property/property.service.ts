@@ -334,6 +334,9 @@ export class PropertyService {
           select: {
             id: true,
             phoneNumber: true,
+            name: true,
+            email: true,
+            profileImage: true,
             role: true,
             Broker: {
               select: {
@@ -370,6 +373,9 @@ export class PropertyService {
       broker: property.broker ? {
         id: property.broker.id,
         phoneNumber: property.broker.phoneNumber,
+        name: property.broker.name,
+        email: property.broker.email,
+        profileImage: property.broker.profileImage,
         role: property.broker.role,
         licenseNumber: property.broker.Broker?.licenseNumber,
         isLicensed: property.broker.Broker?.isLicensed
