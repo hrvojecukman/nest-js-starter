@@ -52,14 +52,6 @@ export class ProjectController {
     return this.projectService.findAll(filterDto);
   }
 
-  @Get('developer/:developerId')
-  findByDeveloperId(
-    @Param('developerId') developerId: string,
-    @Query() filterDto: ProjectFilterDto,
-  ) {
-    return this.projectService.findAll({ ...filterDto, developerId });
-  }
-
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.projectService.findOne(id);
