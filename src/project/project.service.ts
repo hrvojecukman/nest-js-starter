@@ -324,7 +324,7 @@ export class ProjectService {
 
   async findOne(id: string): Promise<ProjectDetailDto> {
     try {
-      const [project, propertyStats] = await Promise.all([
+      const [project, stats] = await Promise.all([
         this.prisma.project.findUniqueOrThrow({
           where: { id },
           include: {
@@ -343,29 +343,8 @@ export class ProjectService {
             timeline: true
           }
         }),
-        this.prisma.property.groupBy({
-          by: ['projectId'],
-          where: { projectId: id },
-          _count: { id: true },
-          _avg: { price: true, space: true },
-          _sum: { price: true }
-        })
+        this.getProjectStats(id)
       ]);
-
-      const [soldStats] = await Promise.all([
-        this.prisma.property.groupBy({
-          by: ['projectId'],
-          where: { 
-            projectId: id,
-            unitStatus: { not: 'available' }
-          },
-          _count: { id: true },
-          _sum: { price: true }
-        })
-      ]);
-
-      const stats = propertyStats[0] || { _count: { id: 0 }, _avg: { price: 0, space: 0 }, _sum: { price: 0 } };
-      const sold = soldStats[0] || { _count: { id: 0 }, _sum: { price: 0 } };
 
       return {
         id: project.id,
@@ -375,36 +354,81 @@ export class ProjectService {
         type: project.type,
         category: project.category,
         media: this.mapMedia(project.media),
-        numberOfUnits: stats._count.id,
-        numberOfAvailableUnits: stats._count.id - sold._count.id,
-        averageUnitPrice: Number(stats._avg.price) || 0,
-        percentSold: stats._count.id > 0 ? Math.round((sold._count.id / stats._count.id) * 100) : 0,
+        numberOfUnits: stats.total,
+        numberOfAvailableUnits: stats.available,
+        averageUnitPrice: stats.averagePrice,
+        percentSold: stats.percentSold,
         developer: this.mapDeveloperInfo(project.developer),
-        amountSold: Number(sold._sum.price) || 0,
-        averageUnitSize: Number(stats._avg.space) || 0,
+        amountSold: stats.amountSold,
+        averageUnitSize: stats.averageSize,
         infrastructureItems: project.infrastructureItems,
-        nearbyPlaces: project.nearbyPlaces.map(place => ({
-          name: place.name,
-          distance: place.distance
-        })),
-        timeline: project.timeline ? project.timeline.map(t => ({
-          id: t.id,
-          type: t.type,
-          title: t.title,
-          description: t.description ?? undefined,
-          startDate: t.startDate,
-          endDate: t.endDate ?? undefined,
-          isInProgress: t.isInProgress,
-          isCompleted: t.isCompleted,
-          progress: t.progress ?? undefined,
-          notes: t.notes ?? undefined,
-          createdAt: t.createdAt,
-          updatedAt: t.updatedAt
-        })) : []
+        nearbyPlaces: this.mapNearbyPlaces(project.nearbyPlaces),
+        timeline: this.mapTimeline(project.timeline)
       };
     } catch (error) {
       throw new NotFoundException(`Project with ID ${id} not found`);
     }
+  }
+
+  // Helper method to get project stats
+  private async getProjectStats(projectId: string) {
+    const [allStats, soldStats] = await Promise.all([
+      this.prisma.property.groupBy({
+        by: ['projectId'],
+        where: { projectId },
+        _count: { id: true },
+        _avg: { price: true, space: true }
+      }),
+      this.prisma.property.groupBy({
+        by: ['projectId'],
+        where: { 
+          projectId,
+          unitStatus: { not: 'available' }
+        },
+        _count: { id: true },
+        _sum: { price: true }
+      })
+    ]);
+
+    const stats = allStats[0] || { _count: { id: 0 }, _avg: { price: 0, space: 0 } };
+    const sold = soldStats[0] || { _count: { id: 0 }, _sum: { price: 0 } };
+    const total = stats._count.id;
+    const soldCount = sold._count.id;
+
+    return {
+      total,
+      available: total - soldCount,
+      averagePrice: Number(stats._avg.price) || 0,
+      averageSize: Number(stats._avg.space) || 0,
+      percentSold: total > 0 ? Math.round((soldCount / total) * 100) : 0,
+      amountSold: Number(sold._sum.price) || 0
+    };
+  }
+
+  // Helper method to map nearby places
+  private mapNearbyPlaces(places: any[]) {
+    return places.map(place => ({
+      name: place.name,
+      distance: place.distance
+    }));
+  }
+
+  // Helper method to map timeline
+  private mapTimeline(timeline: any[]) {
+    return timeline?.map(t => ({
+      id: t.id,
+      type: t.type,
+      title: t.title,
+      description: t.description ?? undefined,
+      startDate: t.startDate,
+      endDate: t.endDate ?? undefined,
+      isInProgress: t.isInProgress,
+      isCompleted: t.isCompleted,
+      progress: t.progress ?? undefined,
+      notes: t.notes ?? undefined,
+      createdAt: t.createdAt,
+      updatedAt: t.updatedAt
+    })) || [];
   }
 
   async update(id: string, dto: UpdateProjectDto, userId: string) {
