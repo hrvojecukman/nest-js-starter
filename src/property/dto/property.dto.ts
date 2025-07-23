@@ -256,3 +256,113 @@ export class PropertyDto {
     phoneNumber: string;
   };
 }
+
+export class SimilarPropertiesQueryDto {
+  // Pagination
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  page?: number = 1;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(100)
+  limit?: number = 10;
+
+  // Similarity weights (0-20 each)
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(20)
+  typeWeight?: number = 12;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(20)
+  categoryWeight?: number = 10;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(20)
+  cityWeight?: number = 8;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(20)
+  locationWeight?: number = 15;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(20)
+  priceWeight?: number = 10;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(20)
+  spaceWeight?: number = 8;
+
+  // Distance thresholds (in km)
+  @IsOptional()
+  @IsNumber()
+  @Min(0.1)
+  @Max(50)
+  closeDistance?: number = 1;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0.1)
+  @Max(50)
+  mediumDistance?: number = 5;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0.1)
+  @Max(50)
+  farDistance?: number = 10;
+
+  // Price range parameters
+  @IsOptional()
+  @IsNumber()
+  @Min(0.1)
+  @Max(2)
+  priceRangePercentage?: number = 0.3; // ±30% of reference price
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0.1)
+  @Max(2)
+  priceRangeMinMultiplier?: number = 0.7; // minPrice * 0.7
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0.1)
+  @Max(2)
+  priceRangeMaxMultiplier?: number = 1.3; // maxPrice * 1.3
+
+  // Space range parameters
+  @IsOptional()
+  @IsNumber()
+  @Min(0.1)
+  @Max(2)
+  spaceRangePercentage?: number = 0.4; // ±40% of reference space
+
+  // Search radius for initial filtering
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(100)
+  searchRadius?: number = 5; // km
+
+  // Minimum similarity score threshold
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  minScore?: number = 0;
+}

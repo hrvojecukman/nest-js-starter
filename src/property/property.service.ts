@@ -1,9 +1,9 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreatePropertyDto, PropertyFilterDto } from './dto/property.dto';
+import { CreatePropertyDto, PropertyFilterDto, SimilarPropertiesQueryDto } from './dto/property.dto';
 import { Prisma, MediaType } from '@prisma/client';
 import { S3Service } from '../s3/s3.service';
-import { calculateBoundingBox } from '../utils/location.utils';
+import { calculateBoundingBox, calculateDistance, kmToDegrees } from '../utils/location.utils';
 import { PropertySortField, SortOrder } from './dto/property.dto';
 
 @Injectable()
@@ -12,6 +12,35 @@ export class PropertyService {
     private readonly prisma: PrismaService,
     private readonly s3Service: S3Service,
   ) {}
+
+  // Reusable method to map property to lightweight format
+  private mapToLightweightProperty(property: any) {
+    return {
+      id: property.id,
+      title: property.title,
+      price: Number(property.price),
+      currency: property.currency,
+      city: property.city,
+      space: property.space,
+      type: property.type,
+      category: property.category,
+      unitStatus: property.unitStatus,
+      location: {
+        lat: property.locationLat,
+        lng: property.locationLng
+      },
+      numberOfLivingRooms: property.numberOfLivingRooms,
+      numberOfRooms: property.numberOfRooms,
+      numberOfKitchen: property.numberOfKitchen,
+      numberOfWC: property.numberOfWC,
+      numberOfFloors: property.numberOfFloors,
+      streetWidth: property.streetWidth,
+      thumbnail: property.media[0]?.url,
+      companyName: property.owner.Developer?.companyName || property.owner.Owner?.companyName,
+      brokerLicenseNumber: property.owner.Broker?.licenseNumber,
+      ownerRole: property.owner.role,
+    };
+  }
 
   async create(createPropertyDto: CreatePropertyDto, ownerId: string) {
     const { brokerId, projectId, ...propertyData } = createPropertyDto;
@@ -260,31 +289,7 @@ export class PropertyService {
     ]);
 
     // Transform the response to a lightweight format
-    const lightweightProperties = properties.map(property => ({
-      id: property.id,
-      title: property.title,
-      price: Number(property.price),
-      currency: property.currency,
-      city: property.city,
-      space: property.space,
-      type: property.type,
-      category: property.category,
-      unitStatus: property.unitStatus,
-      location: {
-        lat: property.locationLat,
-        lng: property.locationLng
-      },
-      numberOfLivingRooms: property.numberOfLivingRooms,
-      numberOfRooms: property.numberOfRooms,
-      numberOfKitchen: property.numberOfKitchen,
-      numberOfWC: property.numberOfWC,
-      numberOfFloors: property.numberOfFloors,
-      streetWidth: property.streetWidth,
-      thumbnail: property.media[0]?.url,
-      companyName: property.owner.Developer?.companyName || property.owner.Owner?.companyName,
-      brokerLicenseNumber: property.owner.Broker?.licenseNumber,
-      ownerRole: property.owner.role,
-    }));
+    const lightweightProperties = properties.map(property => this.mapToLightweightProperty(property));
 
     return {
       data: lightweightProperties,
@@ -501,5 +506,251 @@ export class PropertyService {
 
       return properties;
     });
+  }
+
+  async findSimilarProperties(
+    propertyId: string,
+    similarityParams?: SimilarPropertiesQueryDto
+  ): Promise<{
+    data: any[];
+    meta: {
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+      hasMorePages: boolean;
+    };
+  }> {
+    // Set default similarity parameters
+    const params = {
+      page: 1,
+      limit: 10,
+      typeWeight: 12,
+      categoryWeight: 10,
+      cityWeight: 8,
+      locationWeight: 15,
+      priceWeight: 10,
+      spaceWeight: 8,
+      closeDistance: 1,
+      mediumDistance: 5,
+      farDistance: 10,
+      priceRangePercentage: 0.3,
+      priceRangeMinMultiplier: 0.7,
+      priceRangeMaxMultiplier: 1.3,
+      spaceRangePercentage: 0.4,
+      searchRadius: 5,
+      minScore: 0,
+      ...similarityParams
+    };
+
+    const pageNum = Number(params.page);
+    const limitNum = Number(params.limit);
+    const skip = (pageNum - 1) * limitNum;
+
+    // First, get the reference property
+    const referenceProperty = await this.prisma.property.findUnique({
+      where: { id: propertyId },
+      include: {
+        owner: {
+          select: {
+            id: true,
+            phoneNumber: true,
+            name: true,
+            role: true,
+            Owner: {
+              select: {
+                companyName: true
+              }
+            },
+            Developer: {
+              select: {
+                companyName: true
+              }
+            },
+            Broker: {
+              select: {
+                licenseNumber: true
+              }
+            }
+          },
+        },
+        broker: {
+          select: {
+            id: true,
+            phoneNumber: true,
+          },
+        },
+        media: true,
+      }
+    });
+
+    if (!referenceProperty) {
+      throw new NotFoundException(`Property with ID ${propertyId} not found`);
+    }
+
+    // Calculate price and space ranges
+    const referencePrice = Number(referenceProperty.price);
+    const referenceSpace = Number(referenceProperty.space);
+    
+    const priceRange = referencePrice * params.priceRangePercentage;
+    const minPriceRange = referencePrice - priceRange;
+    const maxPriceRange = referencePrice + priceRange;
+
+    const spaceRange = referenceSpace * params.spaceRangePercentage;
+    const minSpaceRange = referenceSpace - spaceRange;
+    const maxSpaceRange = referenceSpace + spaceRange;
+
+    // Find similar properties based on multiple criteria
+    const allSimilarProperties = await this.prisma.property.findMany({
+      where: {
+        id: { not: propertyId }, // Exclude the reference property
+        OR: [
+          // Same type and category
+          {
+            type: referenceProperty.type,
+            category: referenceProperty.category,
+          },
+          // Same city
+          {
+            city: referenceProperty.city,
+          },
+          // Similar location (within searchRadius km)
+          {
+            locationLat: {
+              gte: referenceProperty.locationLat - kmToDegrees(params.searchRadius),
+              lte: referenceProperty.locationLat + kmToDegrees(params.searchRadius),
+            },
+            locationLng: {
+              gte: referenceProperty.locationLng - kmToDegrees(params.searchRadius),
+              lte: referenceProperty.locationLng + kmToDegrees(params.searchRadius),
+            },
+          },
+          // Similar price range
+          {
+            price: {
+              gte: minPriceRange,
+              lte: maxPriceRange,
+            },
+          },
+          // Similar space range
+          {
+            space: {
+              gte: minSpaceRange,
+              lte: maxSpaceRange,
+            },
+          },
+        ],
+      },
+      include: {
+        owner: {
+          select: {
+            id: true,
+            phoneNumber: true,
+            name: true,
+            role: true,
+            Owner: {
+              select: {
+                companyName: true
+              }
+            },
+            Developer: {
+              select: {
+                companyName: true
+              }
+            },
+            Broker: {
+              select: {
+                licenseNumber: true
+              }
+            }
+          },
+        },
+        broker: {
+          select: {
+            id: true,
+            phoneNumber: true,
+          },
+        },
+        media: true,
+      },
+    });
+
+    if (!allSimilarProperties.length) {
+      return {
+        data: [],
+        meta: {
+          total: 0,
+          page: pageNum,
+          limit: limitNum,
+          totalPages: 0,
+          hasMorePages: false
+        }
+      };
+    }
+
+    // Score and sort properties by similarity
+    const scoredProperties = allSimilarProperties
+      .map(property => {
+        const propertyPrice = Number(property.price);
+        const propertySpace = Number(property.space);
+        
+        let score = 0;
+        
+        // Type and category match
+        if (property.type === referenceProperty.type) score += params.typeWeight;
+        if (property.category === referenceProperty.category) score += params.categoryWeight;
+        
+        // City match
+        if (property.city === referenceProperty.city) score += params.cityWeight;
+        
+        // Location proximity (calculate distance)
+        const distance = calculateDistance(
+          referenceProperty.locationLat,
+          referenceProperty.locationLng,
+          property.locationLat,
+          property.locationLng
+        );
+        if (distance <= params.closeDistance) score += params.locationWeight;
+        else if (distance <= params.mediumDistance) score += Math.floor(params.locationWeight * 0.7);
+        else if (distance <= params.farDistance) score += Math.floor(params.locationWeight * 0.4);
+        
+        // Price similarity
+        if (propertyPrice >= minPriceRange && propertyPrice <= maxPriceRange) {
+          score += params.priceWeight;
+        } else if (propertyPrice >= referencePrice * params.priceRangeMinMultiplier && 
+                   propertyPrice <= referencePrice * params.priceRangeMaxMultiplier) {
+          score += Math.floor(params.priceWeight * 0.5);
+        }
+
+        // Space similarity
+        if (propertySpace >= minSpaceRange && propertySpace <= maxSpaceRange) {
+          score += params.spaceWeight;
+        }
+
+        return {
+          property,
+          score
+        };
+      })
+      .filter(item => item.score >= params.minScore) // Only include properties with minimum similarity score
+      .sort((a, b) => b.score - a.score); // Sort by score descending
+
+    // Apply pagination
+    const total = scoredProperties.length;
+    const paginatedProperties = scoredProperties.slice(skip, skip + limitNum);
+
+    // Transform properties to lightweight format (same as findAll)
+    const data = paginatedProperties.map(item => this.mapToLightweightProperty(item.property));
+
+    return {
+      data,
+      meta: {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum),
+        hasMorePages: pageNum < Math.ceil(total / limitNum),
+      }
+    };
   }
 }

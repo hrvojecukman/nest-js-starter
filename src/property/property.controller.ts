@@ -13,7 +13,7 @@ import {
   UploadedFiles,
 } from '@nestjs/common';
 import { PropertyService } from './property.service';
-import { CreatePropertyDto, PropertyFilterDto } from './dto/property.dto';
+import { CreatePropertyDto, PropertyFilterDto, SimilarPropertiesQueryDto } from './dto/property.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { MediaType } from '@prisma/client';
@@ -79,6 +79,14 @@ export class PropertyController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.propertyService.findOne(id);
+  }
+
+  @Get(':id/similar')
+  findSimilarProperties(
+    @Param('id') id: string,
+    @Query() query: SimilarPropertiesQueryDto
+  ) {
+    return this.propertyService.findSimilarProperties(id, query);
   }
 
   @UseGuards(JwtAuthGuard)
