@@ -202,6 +202,10 @@ export class PropertyFilterDto {
   developerId?: string;
 
   @IsOptional()
+  @IsString()
+  projectId?: string;
+
+  @IsOptional()
   @IsEnum(PropertySortField)
   sortBy?: PropertySortField = PropertySortField.CREATED_AT;
 

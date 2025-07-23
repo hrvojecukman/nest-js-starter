@@ -80,7 +80,6 @@ export class ProjectSummaryDto {
 export class ProjectDetailDto extends ProjectSummaryDto {
   description: string;
   infrastructureItems: InfrastructureItem[];
-  properties: PropertyDto[];
   nearbyPlaces: NearbyPlaceDto[];
   timeline: {
     id: string;

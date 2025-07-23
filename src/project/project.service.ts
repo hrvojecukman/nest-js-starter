@@ -165,35 +165,6 @@ export class ProjectService {
     developer: this.mapDeveloperSimple(project.developer)
   });
 
-  private mapProjectToDetailDto = (project: any): ProjectDetailDto => {
-    const stats = this.calculateStats(project.properties);
-    const base = this.mapProjectToSummary(project, stats);
-    
-    return {
-      ...base,
-      developer: this.mapDeveloperInfo(project.developer), // Override with full developer info
-      infrastructureItems: project.infrastructureItems,
-      nearbyPlaces: project.nearbyPlaces.map(place => ({
-        name: place.name,
-        distance: place.distance
-      })),
-      properties: project.properties.map(this.mapPropertyToDto),
-      timeline: project.timeline ? project.timeline.map(t => ({
-        id: t.id,
-        type: t.type,
-        title: t.title,
-        description: t.description ?? undefined,
-        startDate: t.startDate,
-        endDate: t.endDate ?? undefined,
-        isInProgress: t.isInProgress,
-        isCompleted: t.isCompleted,
-        progress: t.progress ?? undefined,
-        notes: t.notes ?? undefined,
-        createdAt: t.createdAt,
-        updatedAt: t.updatedAt
-      })) : []
-    };
-  };
 
   async create(dto: CreateProjectDto, userId: string) {
     await this.checkDeveloperRole(userId);
@@ -353,44 +324,84 @@ export class ProjectService {
 
   async findOne(id: string): Promise<ProjectDetailDto> {
     try {
-      const project = await this.prisma.project.findUniqueOrThrow({
-        where: { id },
-        include: {
-          developer: {
-            select: {
-              id: true,
-              email: true,
-              phoneNumber: true,
-              name: true,
-              profileImage: true,
-              Developer: true
-            }
-          },
-          properties: {
-            include: {
-              owner: {
-                select: {
-                  role: true,
-                  id: true,
-                  name: true,
-                  phoneNumber: true,  
-                  Owner: { select: { companyName: true } },
-                  Developer: { select: { companyName: true } }
-                }
-              },
-              broker: {
-                select: { id: true, phoneNumber: true }
-              },
-              media: true
-            }
-          },
-          nearbyPlaces: true,
-          media: true,
-          timeline: true
-        }
-      });
+      const [project, propertyStats] = await Promise.all([
+        this.prisma.project.findUniqueOrThrow({
+          where: { id },
+          include: {
+            developer: {
+              select: {
+                id: true,
+                email: true,
+                phoneNumber: true,
+                name: true,
+                profileImage: true,
+                Developer: true
+              }
+            },
+            nearbyPlaces: true,
+            media: true,
+            timeline: true
+          }
+        }),
+        this.prisma.property.groupBy({
+          by: ['projectId'],
+          where: { projectId: id },
+          _count: { id: true },
+          _avg: { price: true, space: true },
+          _sum: { price: true }
+        })
+      ]);
 
-      return this.mapProjectToDetailDto(project);
+      const [soldStats] = await Promise.all([
+        this.prisma.property.groupBy({
+          by: ['projectId'],
+          where: { 
+            projectId: id,
+            unitStatus: { not: 'available' }
+          },
+          _count: { id: true },
+          _sum: { price: true }
+        })
+      ]);
+
+      const stats = propertyStats[0] || { _count: { id: 0 }, _avg: { price: 0, space: 0 }, _sum: { price: 0 } };
+      const sold = soldStats[0] || { _count: { id: 0 }, _sum: { price: 0 } };
+
+      return {
+        id: project.id,
+        name: project.name,
+        description: project.description,
+        city: project.city,
+        type: project.type,
+        category: project.category,
+        media: this.mapMedia(project.media),
+        numberOfUnits: stats._count.id,
+        numberOfAvailableUnits: stats._count.id - sold._count.id,
+        averageUnitPrice: Number(stats._avg.price) || 0,
+        percentSold: stats._count.id > 0 ? Math.round((sold._count.id / stats._count.id) * 100) : 0,
+        developer: this.mapDeveloperInfo(project.developer),
+        amountSold: Number(sold._sum.price) || 0,
+        averageUnitSize: Number(stats._avg.space) || 0,
+        infrastructureItems: project.infrastructureItems,
+        nearbyPlaces: project.nearbyPlaces.map(place => ({
+          name: place.name,
+          distance: place.distance
+        })),
+        timeline: project.timeline ? project.timeline.map(t => ({
+          id: t.id,
+          type: t.type,
+          title: t.title,
+          description: t.description ?? undefined,
+          startDate: t.startDate,
+          endDate: t.endDate ?? undefined,
+          isInProgress: t.isInProgress,
+          isCompleted: t.isCompleted,
+          progress: t.progress ?? undefined,
+          notes: t.notes ?? undefined,
+          createdAt: t.createdAt,
+          updatedAt: t.updatedAt
+        })) : []
+      };
     } catch (error) {
       throw new NotFoundException(`Project with ID ${id} not found`);
     }

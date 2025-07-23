@@ -218,6 +218,10 @@ export class PropertyService {
       };
     }
 
+    if (filters.projectId) {
+      where.projectId = filters.projectId;
+    }
+
     // Add location filtering using bounding box
     if (filters.lat !== undefined && filters.lng !== undefined && filters.radius !== undefined) {
       const lat = Number(filters.lat);
