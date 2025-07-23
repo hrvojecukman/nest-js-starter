@@ -1,7 +1,7 @@
 import { PropertyType, PropertyCategory, InfrastructureItem, MediaType } from '@prisma/client';
 import { PropertyDto } from '../../property/dto/property.dto';
 import { PartialType } from '@nestjs/mapped-types';
-import { IsOptional, IsString, IsEnum, IsNumber, IsLatitude, IsLongitude, Min } from 'class-validator';
+import { IsOptional, IsString, IsEnum, IsNumber, IsLatitude, IsLongitude, Min, Max } from 'class-validator';
 
 export class MediaDto {
   url: string;
@@ -161,4 +161,99 @@ export class ProjectFilterDto {
   @IsOptional()
   @IsNumber()
   limit?: number = 10;
+}
+
+export class SimilarProjectsQueryDto {
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(20)
+  limit?: number = 10;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  page?: number = 1;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(20)
+  typeWeight?: number = 10;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(20)
+  categoryWeight?: number = 10;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(20)
+  cityWeight?: number = 8;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(20)
+  locationWeight?: number = 7;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(20)
+  priceWeight?: number = 6;
+
+  // Distance thresholds (in km)
+  @IsOptional()
+  @IsNumber()
+  @Min(0.1)
+  @Max(50)
+  closeDistance?: number = 1;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0.1)
+  @Max(50)
+  mediumDistance?: number = 5;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0.1)
+  @Max(50)
+  farDistance?: number = 10;
+
+  // Price range parameters
+  @IsOptional()
+  @IsNumber()
+  @Min(0.1)
+  @Max(2)
+  priceRangePercentage?: number = 0.3; // ±30% of average price
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0.1)
+  @Max(2)
+  priceRangeMinMultiplier?: number = 0.7; // minPrice * 0.7
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0.1)
+  @Max(2)
+  priceRangeMaxMultiplier?: number = 1.3; // maxPrice * 1.3
+
+  // Search radius for initial filtering
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(100)
+  searchRadius?: number = 5; // km
+
+  // Minimum similarity score threshold
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  minScore?: number = 0;
 } 

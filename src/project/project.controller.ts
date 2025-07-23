@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards, Request, UseInterceptors, UploadedFiles } from '@nestjs/common';
 import { ProjectService } from './project.service';
-import { CreateProjectDto, UpdateProjectDto } from './dto/project.dto';
+import { CreateProjectDto, UpdateProjectDto, SimilarProjectsQueryDto } from './dto/project.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { JwtUser } from '../auth/auth.controller';
 import { FilesInterceptor } from '@nestjs/platform-express';
@@ -68,6 +68,14 @@ export class ProjectController {
   @Get(':id/documents')
   async getProjectDocuments(@Param('id') id: string) {
     return this.projectService.getProjectDocuments(id);
+  }
+
+  @Get(':id/similar')
+  async findSimilarProjects(
+    @Param('id') id: string,
+    @Query() query: SimilarProjectsQueryDto
+  ) {
+    return this.projectService.findSimilarProjects(id, query.limit, query.page, query);
   }
 
   @Patch(':id')

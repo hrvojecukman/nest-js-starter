@@ -1,12 +1,12 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateProjectDto, UpdateProjectDto, ProjectSummaryDto, ProjectDetailDto } from './dto/project.dto';
+import { CreateProjectDto, UpdateProjectDto, ProjectSummaryDto, ProjectDetailDto, SimilarProjectsQueryDto } from './dto/project.dto';
 import { Role, Prisma, Project, Property, MediaType, ProjectTimeline } from '@prisma/client';
 import { PropertyDto } from 'src/property/dto/property.dto';
 import { S3Service } from '../s3/s3.service';
 import { ProjectFilterDto } from './dto/project.dto';
 import { ProjectSortField, SortOrder } from './dto/project.dto';
-import { calculateBoundingBox } from '../utils/location.utils';
+import { calculateBoundingBox, calculateDistance, kmToDegrees } from '../utils/location.utils';
 
 // Type definitions for cleaner code
 
@@ -329,100 +329,26 @@ export class ProjectService {
     }
 
     const [projects, total] = await Promise.all([
-      this.prisma.project.findMany({
-        where,
+      this.getProjectsWithIncludes(where, {
         skip,
         take: limitNum,
-        include: {
-          developer: {
-            include: {
-              Developer: true
-            }
-          },
-          media: true
-        },
         orderBy: { [sortBy]: sortOrder }
       }),
       this.prisma.project.count({ where })
     ]);
 
     if (!projects.length) {
-      return {
-        data: [],
-        meta: {
-          total,
-          page: pageNum,
-          limit: limitNum,
-          totalPages: Math.ceil(total / limitNum),
-          hasMorePages: pageNum < Math.ceil(total / limitNum)
-        }
-      };
+      return this.createPaginatedResponse([], total, pageNum, limitNum);
     }
 
-    // Single optimized query for all stats
+    // Get stats for all projects
     const projectIds = projects.map(p => p.id);
-    const [allStats, soldStats] = await Promise.all([
-      this.prisma.property.groupBy({
-        by: ['projectId'],
-        where: { projectId: { in: projectIds } },
-        _count: { id: true },
-        _avg: { price: true, space: true },
-        _sum: { price: true }
-      }),
-      this.prisma.property.groupBy({
-        by: ['projectId'],
-        where: { 
-          projectId: { in: projectIds },
-          unitStatus: { not: 'available' }
-        },
-        _count: { id: true },
-        _sum: { price: true }
-      })
-    ]);
+    const statsMap = await this.getProjectsStats(projectIds);
 
-    // Create stats map
-    const statsMap = new Map(
-      allStats.map(stat => [
-        stat.projectId,
-        {
-          total: stat._count.id,
-          averagePrice: Number(stat._avg.price) || 0,
-          averageSize: Number(stat._avg.space) || 0,
-          soldCount: 0,
-          amountSold: 0
-        }
-      ])
-    );
-
-    soldStats.forEach(stat => {
-      const existing = statsMap.get(stat.projectId);
-      if (existing) {
-        existing.soldCount = stat._count.id;
-        existing.amountSold = Number(stat._sum.price) || 0;
-      }
-    });
-
-    const totalPages = Math.ceil(total / limitNum);
-    return {
-      data: projects.map(project => {
-        const stats = statsMap.get(project.id) || { total: 0, averagePrice: 0, averageSize: 0, soldCount: 0, amountSold: 0 };
-                 return this.mapProjectToSummary(project, {
-           total: stats.total,
-           available: stats.total - stats.soldCount,
-           averagePrice: Number(stats.averagePrice),
-           averageSize: Number(stats.averageSize),
-           percentSold: stats.total > 0 ? Math.round((stats.soldCount / stats.total) * 100) : 0,
-           amountSold: Number(stats.amountSold)
-         });
-      }),
-      meta: {
-        total,
-        page: pageNum,
-        limit: limitNum,
-        totalPages,
-        hasMorePages: pageNum < totalPages
-      }
-    };
+    // Map projects to summary DTOs
+    const data = this.mapProjectsToSummaryWithStats(projects, statsMap);
+    
+    return this.createPaginatedResponse(data, total, pageNum, limitNum);
   }
 
   async findOne(id: string): Promise<ProjectDetailDto> {
@@ -537,6 +463,310 @@ export class ProjectService {
     return this.prisma.media.findMany({
       where: { projectId, type: 'document' },
       select: { id: true, url: true, type: true, key: true, name: true, createdAt: true }
+    });
+  }
+
+  async findSimilarProjects(
+    projectId: string, 
+    limit: number = 10, 
+    page: number = 1,
+    similarityParams?: SimilarProjectsQueryDto
+  ): Promise<{
+    data: ProjectSummaryDto[];
+    meta: {
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+      hasMorePages: boolean;
+    };
+  }> {
+    const pageNum = Number(page);
+    const limitNum = Number(limit);
+    
+    // Set default similarity parameters
+    const params = {
+      typeWeight: 10,
+      categoryWeight: 10,
+      cityWeight: 8,
+      locationWeight: 7,
+      priceWeight: 6,
+      closeDistance: 1,
+      mediumDistance: 5,
+      farDistance: 10,
+      priceRangePercentage: 0.3,
+      priceRangeMinMultiplier: 0.7,
+      priceRangeMaxMultiplier: 1.3,
+      searchRadius: 5,
+      minScore: 0,
+      ...similarityParams
+    };
+    // First, get the reference project
+    const referenceProject = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      include: {
+        developer: {
+          include: {
+            Developer: true
+          }
+        },
+        media: true
+      }
+    });
+
+    if (!referenceProject) {
+      throw new NotFoundException(`Project with ID ${projectId} not found`);
+    }
+
+    // Get project stats for price range calculation
+    const projectStats = await this.prisma.property.groupBy({
+      by: ['projectId'],
+      where: { projectId },
+      _avg: { price: true },
+      _min: { price: true },
+      _max: { price: true }
+    });
+
+    const avgPrice = projectStats[0]?._avg.price ? Number(projectStats[0]._avg.price) : 0;
+    const minPrice = projectStats[0]?._min.price ? Number(projectStats[0]._min.price) : 0;
+    const maxPrice = projectStats[0]?._max.price ? Number(projectStats[0]._max.price) : 0;
+
+    // Calculate price range using customizable parameters
+    const priceRange = avgPrice * params.priceRangePercentage;
+    const minPriceRange = avgPrice - priceRange;
+    const maxPriceRange = avgPrice + priceRange;
+
+    // Find similar projects based on multiple criteria (get all for scoring)
+    const allSimilarProjects = await this.prisma.project.findMany({
+      where: {
+        id: { not: projectId }, // Exclude the reference project
+        OR: [
+          // Same type and category
+          {
+            type: referenceProject.type,
+            category: referenceProject.category,
+          },
+          // Same city
+          {
+            city: referenceProject.city,
+          },
+          // Similar location (within searchRadius km)
+          {
+            locationLat: {
+              gte: referenceProject.locationLat - kmToDegrees(params.searchRadius), // Convert km to degrees
+              lte: referenceProject.locationLat + kmToDegrees(params.searchRadius),
+            },
+            locationLng: {
+              gte: referenceProject.locationLng - kmToDegrees(params.searchRadius),
+              lte: referenceProject.locationLng + kmToDegrees(params.searchRadius),
+            },
+          },
+        ],
+      },
+      include: {
+        developer: {
+          include: {
+            Developer: true
+          }
+        },
+        media: true
+      },
+    });
+
+    if (!allSimilarProjects.length) {
+      return {
+        data: [],
+        meta: {
+          total: 0,
+          page: pageNum,
+          limit: limitNum,
+          totalPages: 0,
+          hasMorePages: false
+        }
+      };
+    }
+
+    // Get stats for all similar projects
+    const projectIds = allSimilarProjects.map(p => p.id);
+    const statsMap = await this.getProjectsStats(projectIds);
+
+    // Score and sort projects by similarity
+    const scoredProjects = allSimilarProjects
+      .map(project => {
+        const stats = statsMap.get(project.id) || { 
+          total: 0, 
+          averagePrice: 0, 
+          averageSize: 0, 
+          soldCount: 0, 
+          amountSold: 0 
+        };
+        
+        let score = 0;
+        
+        // Type and category match
+        if (project.type === referenceProject.type) score += params.typeWeight;
+        if (project.category === referenceProject.category) score += params.categoryWeight;
+        
+        // City match
+        if (project.city === referenceProject.city) score += params.cityWeight;
+        
+        // Location proximity (calculate distance)
+        const distance = calculateDistance(
+          referenceProject.locationLat,
+          referenceProject.locationLng,
+          project.locationLat,
+          project.locationLng
+        );
+        if (distance <= params.closeDistance) score += params.locationWeight;
+        else if (distance <= params.mediumDistance) score += Math.floor(params.locationWeight * 0.7);
+        else if (distance <= params.farDistance) score += Math.floor(params.locationWeight * 0.4);
+        
+        // Price similarity
+        const projectAvgPrice = stats.averagePrice;
+        if (projectAvgPrice >= minPriceRange && projectAvgPrice <= maxPriceRange) {
+          score += params.priceWeight;
+        } else if (projectAvgPrice >= minPrice * params.priceRangeMinMultiplier && 
+                   projectAvgPrice <= maxPrice * params.priceRangeMaxMultiplier) {
+          score += Math.floor(params.priceWeight * 0.5);
+        }
+
+        return {
+          project,
+          stats,
+          score
+        };
+      })
+      .filter(item => item.score >= params.minScore) // Only include projects with minimum similarity score
+      .sort((a, b) => b.score - a.score); // Sort by score descending
+
+    // Apply pagination
+    const total = scoredProjects.length;
+    const skip = (pageNum - 1) * limitNum;
+    const paginatedProjects = scoredProjects.slice(skip, skip + limitNum);
+
+    // Map projects to summary DTOs
+    const data = this.mapProjectsToSummaryWithStats(
+      paginatedProjects.map(item => item.project),
+      statsMap
+    );
+
+    return this.createPaginatedResponse(data, total, pageNum, limitNum);
+  }
+
+  // Reusable method to get project stats for multiple projects
+  private async getProjectsStats(projectIds: string[]) {
+    if (!projectIds.length) {
+      return new Map();
+    }
+
+    const [allStats, soldStats] = await Promise.all([
+      this.prisma.property.groupBy({
+        by: ['projectId'],
+        where: { projectId: { in: projectIds } },
+        _count: { id: true },
+        _avg: { price: true, space: true },
+        _sum: { price: true }
+      }),
+      this.prisma.property.groupBy({
+        by: ['projectId'],
+        where: { 
+          projectId: { in: projectIds },
+          unitStatus: { not: 'available' }
+        },
+        _count: { id: true },
+        _sum: { price: true }
+      })
+    ]);
+
+    // Create stats map
+    const statsMap = new Map(
+      allStats.map(stat => [
+        stat.projectId,
+        {
+          total: stat._count.id,
+          averagePrice: Number(stat._avg.price) || 0,
+          averageSize: Number(stat._avg.space) || 0,
+          soldCount: 0,
+          amountSold: 0
+        }
+      ])
+    );
+
+    soldStats.forEach(stat => {
+      const existing = statsMap.get(stat.projectId);
+      if (existing) {
+        existing.soldCount = stat._count.id;
+        existing.amountSold = Number(stat._sum.price) || 0;
+      }
+    });
+
+    return statsMap;
+  }
+
+  // Reusable method to create paginated response
+  private createPaginatedResponse<T>(
+    data: T[],
+    total: number,
+    page: number,
+    limit: number
+  ) {
+    const totalPages = Math.ceil(total / limit);
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasMorePages: page < totalPages
+      }
+    };
+  }
+
+  // Reusable method to get projects with basic includes
+  private async getProjectsWithIncludes(where: Prisma.ProjectWhereInput, options?: {
+    skip?: number;
+    take?: number;
+    orderBy?: Prisma.ProjectOrderByWithRelationInput;
+  }) {
+    return this.prisma.project.findMany({
+      where,
+      skip: options?.skip,
+      take: options?.take,
+      orderBy: options?.orderBy,
+      include: {
+        developer: {
+          include: {
+            Developer: true
+          }
+        },
+        media: true
+      }
+    });
+  }
+
+  // Reusable method to map projects to summary DTOs with stats
+  private mapProjectsToSummaryWithStats(
+    projects: any[],
+    statsMap: Map<string, any>
+  ): ProjectSummaryDto[] {
+    return projects.map(project => {
+      const stats = statsMap.get(project.id) || { 
+        total: 0, 
+        averagePrice: 0, 
+        averageSize: 0, 
+        soldCount: 0, 
+        amountSold: 0 
+      };
+      
+      return this.mapProjectToSummary(project, {
+        total: stats.total,
+        available: stats.total - stats.soldCount,
+        averagePrice: Number(stats.averagePrice),
+        averageSize: Number(stats.averageSize),
+        percentSold: stats.total > 0 ? Math.round((stats.soldCount / stats.total) * 100) : 0,
+        amountSold: Number(stats.amountSold)
+      });
     });
   }
 } 
