@@ -44,6 +44,7 @@ const generateUser = (role: Role) => {
           create: {
             isLicensed: faker.datatype.boolean(),
             licenseNumber: faker.string.alphanumeric(8).toUpperCase(),
+            description: faker.lorem.paragraph(),
           },
         },
       };

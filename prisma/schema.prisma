@@ -55,6 +55,7 @@ model Broker {
   id            String  @id @default(uuid()) @map("user_id")
   isLicensed    Boolean
   licenseNumber String
+  description   String?
   user          User    @relation(fields: [id], references: [id])
 }
 
