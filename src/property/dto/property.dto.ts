@@ -252,7 +252,6 @@ export class PropertyDto {
     id: string;
     name: string;
     phoneNumber: string;
-    companyName?: string;
     role: string;
   };
   broker?: {

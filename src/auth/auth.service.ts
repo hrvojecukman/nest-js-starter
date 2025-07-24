@@ -48,6 +48,7 @@ export class AuthService {
       const newUser = await this.prisma.user.create({
         data: {
           phoneNumber: dto.phoneNumber,
+          name: 'User', // Temporary name until profile is completed
           role: role,
         },
       });

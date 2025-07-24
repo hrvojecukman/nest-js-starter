@@ -17,8 +17,8 @@ type PropertyWithRelations = Property & {
     phoneNumber: string;
     name: string;
     role: string;
-    Owner: { companyName: string | null } | null;
-    Developer: { companyName: string | null } | null;
+    Owner: {} | null;
+    Developer: {} | null;
   };
   broker: { id: string; phoneNumber: string } | null;
   media: { url: string; type: string }[];
@@ -87,7 +87,6 @@ export class ProjectService {
     id: developer.id,
     name: developer.name ?? undefined,
     profileImage: developer.profileImage ?? undefined,
-    companyName: developer.Developer?.companyName ?? undefined,
     isLicensed: developer.Developer?.isLicensed ?? undefined,
     hasWafi: developer.Developer?.hasWafi ?? undefined,
     acceptsBanks: developer.Developer?.acceptsBanks ?? undefined,
@@ -100,7 +99,6 @@ export class ProjectService {
   private mapDeveloperSimple = (developer: any) => ({
     name: developer.name ?? undefined,
     profileImage: developer.profileImage ?? undefined,
-    companyName: developer.Developer?.companyName ?? undefined,
   });
 
   private mapMedia = (media: { url: string; type: string | MediaType; name?: string | null }[]) =>
@@ -114,7 +112,6 @@ export class ProjectService {
       id: property.owner.id,
       name: property.owner.name,
       phoneNumber: property.owner.phoneNumber,
-      companyName: property.owner.Owner?.companyName || property.owner.Developer?.companyName || undefined,
       role: property.owner.role
     },
     broker: property.broker ? {
@@ -123,25 +120,6 @@ export class ProjectService {
     } : undefined,
     media: property.media
   });
-
-  private calculateStats = (properties: PropertyWithRelations[]): ProjectStats => {
-    const total = properties.length;
-    const available = properties.filter(p => p.unitStatus === 'available').length;
-    const sold = total - available;
-    const totalPrice = properties.reduce((sum, p) => sum + Number(p.price), 0);
-    const totalSize = properties.reduce((sum, p) => sum + Number(p.space), 0);
-    
-    return {
-      total,
-      available,
-      averagePrice: total > 0 ? totalPrice / total : 0,
-      averageSize: total > 0 ? totalSize / total : 0,
-      percentSold: total > 0 ? Math.round((sold / total) * 100) : 0,
-      amountSold: properties
-        .filter(p => p.unitStatus !== 'available')
-        .reduce((sum, p) => sum + Number(p.price), 0)
-    };
-  };
 
   private mapProjectToSummary = (project: Project & {
     developer: any;
@@ -454,7 +432,7 @@ export class ProjectService {
       include: {
         developer: {
           select: {
-            Developer: { select: { companyName: true } }
+            Developer: true
           }
         },
         nearbyPlaces: true,

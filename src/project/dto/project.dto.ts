@@ -58,7 +58,6 @@ export class UpdateProjectDto extends PartialType(CreateProjectDto) {}
 export class DeveloperDto {
   name?: string;
   profileImage?: string;
-  companyName?: string;
 }
 
 export class ProjectSummaryDto {

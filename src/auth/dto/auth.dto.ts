@@ -72,10 +72,13 @@ export class BuyerDetailsDto {
 
 export class OwnerDetailsDto {
   @IsString()
-  companyName: string;
+  name: string;
 }
 
 export class DeveloperDetailsDto {
+  @IsString()
+  name: string;
+
   @IsBoolean()
   isLicensed: boolean;
 
@@ -85,14 +88,26 @@ export class DeveloperDetailsDto {
   @IsBoolean()
   acceptsBanks: boolean;
 
+  @IsOptional()
   @IsString()
-  companyName: string;
+  description?: string;
+
+  @IsOptional()
+  @IsString()
+  location?: string;
 }
 
 export class BrokerDetailsDto {
+  @IsString()
+  name: string;
+
   @IsBoolean()
   isLicensed: boolean;
 
   @IsString()
   licenseNumber: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
 }

@@ -36,7 +36,7 @@ export class PropertyService {
       numberOfFloors: property.numberOfFloors,
       streetWidth: property.streetWidth,
       thumbnail: property.media[0]?.url,
-      companyName: property.owner.Developer?.companyName || property.owner.Owner?.companyName,
+      ownerName: property.owner.name,
       brokerLicenseNumber: property.owner.Broker?.licenseNumber,
       ownerRole: property.owner.role,
     };
@@ -82,16 +82,8 @@ export class PropertyService {
             id: true,
             phoneNumber: true,
             name: true,
-            Owner: {
-              select: {
-                companyName: true
-              }
-            },
-            Developer: {
-              select: {
-                companyName: true
-              }
-            }
+            Owner: true,
+            Developer: true
           },
         },
         broker: {
@@ -117,7 +109,6 @@ export class PropertyService {
         id: property.owner.id,
         phoneNumber: property.owner.phoneNumber,
         name: property.owner.name,
-        companyName: property.owner.Owner?.companyName || property.owner.Developer?.companyName
       }
     };
   }
@@ -267,16 +258,8 @@ export class PropertyService {
           owner: {
             select: {
               role: true,
-              Developer: {
-                select: {
-                  companyName: true
-                }
-              },
-              Owner: {
-                select: {
-                  companyName: true
-                }
-              },
+              Developer: true,
+              Owner: true,
               Broker: {
                 select: {
                   licenseNumber: true,
@@ -317,16 +300,8 @@ export class PropertyService {
             phoneNumber: true,
             name: true,
             role: true,
-            Owner: {
-              select: {
-                companyName: true
-              }
-            },
-            Developer: {
-              select: {
-                companyName: true
-              }
-            },
+            Owner: true,
+            Developer: true,
             Broker: {
               select: {
                 licenseNumber: true,
@@ -373,7 +348,6 @@ export class PropertyService {
         id: property.owner.id,
         phoneNumber: property.owner.phoneNumber,
         name: property.owner.name,
-        companyName: property.owner.Owner?.companyName || property.owner.Developer?.companyName,
         role: property.owner.role
       },
       broker: property.broker ? {
@@ -468,16 +442,8 @@ export class PropertyService {
                   phoneNumber: true,
                   name: true,
                   role: true,
-                  Owner: {
-                    select: {
-                      companyName: true
-                    }
-                  },
-                  Developer: {
-                    select: {
-                      companyName: true
-                    }
-                  }
+                  Owner: true,
+                  Developer: true
                 },
               },
               broker: {
@@ -507,7 +473,6 @@ export class PropertyService {
               id: property.owner.id,
               phoneNumber: property.owner.phoneNumber,
               name: property.owner.name,
-              companyName: property.owner.Owner?.companyName || property.owner.Developer?.companyName,
               role: property.owner.role
             },
             broker: property.broker ? {
@@ -570,16 +535,8 @@ export class PropertyService {
             phoneNumber: true,
             name: true,
             role: true,
-            Owner: {
-              select: {
-                companyName: true
-              }
-            },
-            Developer: {
-              select: {
-                companyName: true
-              }
-            },
+            Owner: true,
+            Developer: true,
             Broker: {
               select: {
                 licenseNumber: true
@@ -661,16 +618,8 @@ export class PropertyService {
             phoneNumber: true,
             name: true,
             role: true,
-            Owner: {
-              select: {
-                companyName: true
-              }
-            },
-            Developer: {
-              select: {
-                companyName: true
-              }
-            },
+            Owner: true,
+            Developer: true,
             Broker: {
               select: {
                 licenseNumber: true

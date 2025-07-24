@@ -32,17 +32,14 @@ export class UserService {
             lastName: true,
           },
         },
-        Owner: {
-          select: {
-            companyName: true,
-          },
-        },
+        Owner: true,
         Developer: {
           select: {
             isLicensed: true,
             hasWafi: true,
             acceptsBanks: true,
-            companyName: true,
+            description: true,
+            location: true,
           },
         },
         Broker: {
@@ -93,6 +90,14 @@ export class UserService {
       throw new UnauthorizedException('User not found');
     }
 
+    // Update user name if provided in details
+    if ('name' in details && details.name) {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { name: details.name },
+      });
+    }
+
     switch (user.role) {
       case Role.OWNER:
         return this.updateOwnerDetails(userId, details as OwnerDetailsDto);
@@ -110,22 +115,15 @@ export class UserService {
   }
 
   private async updateOwnerDetails(userId: string, details: OwnerDetailsDto) {
-    if (!details.companyName) {
-      throw new BadRequestException('Company name is required for Owner');
-    }
-
     const existingOwner = await this.prisma.owner.findUnique({
       where: { id: userId },
     });
 
     if (existingOwner) {
-      await this.prisma.owner.update({
-        where: { id: userId },
-        data: { companyName: details.companyName },
-      });
+      return { success: true, role: Role.OWNER };
     } else {
       await this.prisma.owner.create({
-        data: { id: userId, companyName: details.companyName },
+        data: { id: userId },
       });
     }
 
@@ -136,11 +134,10 @@ export class UserService {
     if (
       details.isLicensed === undefined ||
       details.hasWafi === undefined ||
-      details.acceptsBanks === undefined ||
-      !details.companyName
+      details.acceptsBanks === undefined
     ) {
       throw new BadRequestException(
-        'isLicensed, hasWafi, acceptsBanks, and companyName are required for Developer',
+        'isLicensed, hasWafi, and acceptsBanks are required for Developer',
       );
     }
 
@@ -155,7 +152,8 @@ export class UserService {
           isLicensed: details.isLicensed,
           hasWafi: details.hasWafi,
           acceptsBanks: details.acceptsBanks,
-          companyName: details.companyName,
+          description: details.description,
+          location: details.location,
         },
       });
     } else {
@@ -165,7 +163,8 @@ export class UserService {
           isLicensed: details.isLicensed,
           hasWafi: details.hasWafi,
           acceptsBanks: details.acceptsBanks,
-          companyName: details.companyName,
+          description: details.description,
+          location: details.location,
         },
       });
     }
@@ -188,6 +187,7 @@ export class UserService {
         data: {
           isLicensed: details.isLicensed,
           licenseNumber: details.licenseNumber,
+          description: details.description,
         },
       });
     } else {
@@ -196,6 +196,7 @@ export class UserService {
           id: userId,
           isLicensed: details.isLicensed,
           licenseNumber: details.licenseNumber,
+          description: details.description,
         },
       });
     }
@@ -212,16 +213,10 @@ export class UserService {
       return { success: false, message: 'Buyer already exists' };
     }
     
-    // Update both User name and create Buyer record
-    await Promise.all([
-      this.prisma.user.update({
-        where: { id: userId },
-        data: { name: details.name },
-      }),
-      this.prisma.buyer.create({
-        data: { id: userId, lastName: details.lastName },
-      }),
-    ]);
+    // Create Buyer record (name is already updated in main method)
+    await this.prisma.buyer.create({
+      data: { id: userId, lastName: details.lastName },
+    });
     
     return { success: true, role: Role.BUYER };
   }
@@ -239,7 +234,7 @@ export class UserService {
         const owner = await this.prisma.owner.findUnique({
           where: { id: userId },
         });
-        return !!owner?.companyName;
+        return !!owner;
       }
 
       case Role.DEVELOPER: {

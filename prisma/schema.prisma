@@ -11,7 +11,7 @@ model User {
   id                 String     @id @default(uuid())
   email              String?    @unique
   phoneNumber        String     @unique
-  name               String?
+  name               String
   profileImage       String?
   role               Role       @default(BUYER)
   createdAt          DateTime   @default(now())
@@ -39,16 +39,14 @@ model Developer {
   isLicensed   Boolean
   hasWafi      Boolean
   acceptsBanks Boolean
-  companyName  String?
   description  String?
   location     String?
   user         User    @relation(fields: [id], references: [id])
 }
 
 model Owner {
-  id          String  @id @default(uuid()) @map("user_id")
-  companyName String?
-  user        User    @relation(fields: [id], references: [id])
+  id   String @id @default(uuid()) @map("user_id")
+  user User   @relation(fields: [id], references: [id])
 }
 
 model Broker {

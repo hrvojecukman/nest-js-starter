@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { UsersFilterDto, UserResponseDto } from './dto/users.dto';
-import { Prisma } from '@prisma/client';
+import { BaseUserFilterDto, UserResponseDto, DeveloperFilterDto, BrokerFilterDto } from './dto/users.dto';
+import { Prisma, Role } from '@prisma/client';
 
 @Injectable()
 export class UsersService {
@@ -12,6 +12,7 @@ export class UsersService {
       id: user.id,
       email: user.email || undefined,
       phoneNumber: user.phoneNumber,
+      name: user.name,
       role: user.role,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
@@ -23,7 +24,8 @@ export class UsersService {
         isLicensed: user.Developer.isLicensed,
         hasWafi: user.Developer.hasWafi,
         acceptsBanks: user.Developer.acceptsBanks,
-        companyName: user.Developer.companyName || undefined,
+        description: user.Developer.description || undefined,
+        location: user.Developer.location || undefined,
       };
     }
 
@@ -32,20 +34,19 @@ export class UsersService {
         ...baseUser,
         isLicensed: user.Broker.isLicensed,
         licenseNumber: user.Broker.licenseNumber,
+        brokerDescription: user.Broker.description || undefined,
       };
     }
 
     if (user.Owner) {
       return {
         ...baseUser,
-        companyName: user.Owner.companyName || undefined,
       };
     }
 
     if (user.Buyer) {
       return {
         ...baseUser,
-        name: user.Buyer.name || undefined,
         lastName: user.Buyer.lastName || undefined,
       };
     }
@@ -53,7 +54,7 @@ export class UsersService {
     return baseUser;
   }
 
-  async findAll(filterDto: UsersFilterDto) {
+  async findAll(filterDto: BaseUserFilterDto) {
     const { 
       page = 1, 
       limit = 10, 
@@ -76,8 +77,9 @@ export class UsersService {
         { email: { contains: search, mode: 'insensitive' } },
         { name: { contains: search, mode: 'insensitive' } },
         { Buyer: { lastName: { contains: search, mode: 'insensitive' } } },
-        { Developer: { companyName: { contains: search, mode: 'insensitive' } } },
-        { Owner: { companyName: { contains: search, mode: 'insensitive' } } },
+        { Developer: { location: { contains: search, mode: 'insensitive' } } },
+        { Developer: { description: { contains: search, mode: 'insensitive' } } },
+        { Broker: { description: { contains: search, mode: 'insensitive' } } },
       ];
     }
 
@@ -94,6 +96,145 @@ export class UsersService {
           Buyer: true,
           Developer: true,
           Owner: true,
+          Broker: true,
+        },
+        orderBy: {
+          [sortBy]: sortOrder,
+        },
+      }),
+      this.prisma.user.count({ where }),
+    ]);
+
+    const flattenedUsers = users.map(user => this.flattenUserResponse(user));
+
+    return {
+      data: flattenedUsers,
+      meta: {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum),
+        hasMorePages: pageNum < Math.ceil(total / limitNum),
+      },
+    };
+  }
+
+  // Cleaner methods for specific user types
+  async findAllDevelopers(filterDto: DeveloperFilterDto) {
+    const { 
+      page = 1, 
+      limit = 10, 
+      search, 
+      developerLocation,
+      isLicensed,
+      hasWafi,
+      acceptsBanks,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+    } = filterDto;
+    
+    const pageNum = typeof page === 'string' ? parseInt(page, 10) : page;
+    const limitNum = typeof limit === 'string' ? parseInt(limit, 10) : limit;
+    const skip = (pageNum - 1) * limitNum;
+
+    const where: Prisma.UserWhereInput = {
+      role: Role.DEVELOPER,
+    };
+
+    if (search) {
+      where.OR = [
+        { phoneNumber: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+        { name: { contains: search, mode: 'insensitive' } },
+        { Developer: { location: { contains: search, mode: 'insensitive' } } },
+        { Developer: { description: { contains: search, mode: 'insensitive' } } },
+      ];
+    }
+
+    // Developer specific filters
+    if (developerLocation || isLicensed !== undefined || hasWafi !== undefined || acceptsBanks !== undefined) {
+      where.Developer = {
+        ...(developerLocation && { location: { contains: developerLocation, mode: 'insensitive' } }),
+        ...(isLicensed !== undefined && { isLicensed }),
+        ...(hasWafi !== undefined && { hasWafi }),
+        ...(acceptsBanks !== undefined && { acceptsBanks }),
+      };
+    }
+
+    const [users, total] = await Promise.all([
+      this.prisma.user.findMany({
+        where,
+        skip,
+        take: limitNum,
+        include: {
+          Developer: true,
+        },
+        orderBy: {
+          [sortBy]: sortOrder,
+        },
+      }),
+      this.prisma.user.count({ where }),
+    ]);
+
+    const flattenedUsers = users.map(user => this.flattenUserResponse(user));
+
+    return {
+      data: flattenedUsers,
+      meta: {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum),
+        hasMorePages: pageNum < Math.ceil(total / limitNum),
+      },
+    };
+  }
+
+  async findAllBrokers(filterDto: BrokerFilterDto) {
+    const { 
+      page = 1, 
+      limit = 10, 
+      search, 
+      brokerLicenseNumber,
+      brokerDescription,
+      brokerIsLicensed,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+    } = filterDto;
+    
+    const pageNum = typeof page === 'string' ? parseInt(page, 10) : page;
+    const limitNum = typeof limit === 'string' ? parseInt(limit, 10) : limit;
+    const skip = (pageNum - 1) * limitNum;
+
+    const where: Prisma.UserWhereInput = {
+      role: Role.BROKER,
+    };
+
+    if (search) {
+      where.OR = [
+        { phoneNumber: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+        { name: { contains: search, mode: 'insensitive' } },
+        { Broker: { licenseNumber: { contains: search, mode: 'insensitive' } } },
+        { Broker: { description: { contains: search, mode: 'insensitive' } } },
+      ];
+    }
+
+    // Broker specific filters
+    if (brokerLicenseNumber || brokerDescription || brokerIsLicensed !== undefined) {
+      where.Broker = {
+        ...(brokerLicenseNumber && { licenseNumber: { contains: brokerLicenseNumber, mode: 'insensitive' } }),
+        ...(brokerDescription && { description: { contains: brokerDescription, mode: 'insensitive' } }),
+        ...(brokerIsLicensed !== undefined && { isLicensed: brokerIsLicensed }),
+      };
+    }
+
+    const [users, total] = await Promise.all([
+      this.prisma.user.findMany({
+        where,
+        skip,
+        take: limitNum,
+        include: {
           Broker: true,
         },
         orderBy: {

@@ -1,5 +1,5 @@
 import { Role } from '@prisma/client';
-import { IsEnum, IsOptional, IsString, IsNumber, Min } from 'class-validator';
+import { IsEnum, IsOptional, IsString, IsNumber, Min, IsBoolean } from 'class-validator';
 
 export enum UsersSortField {
   CREATED_AT = 'createdAt',
@@ -12,7 +12,8 @@ export enum SortOrder {
   DESC = 'desc',
 }
 
-export class UsersFilterDto {
+// Base filter DTO with common fields
+export class BaseUserFilterDto {
   @IsOptional()
   @IsString()
   search?: string;
@@ -40,10 +41,44 @@ export class UsersFilterDto {
   limit?: number = 10;
 }
 
+// Developer specific filter DTO
+export class DeveloperFilterDto extends BaseUserFilterDto {
+  @IsOptional()
+  @IsString()
+  developerLocation?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isLicensed?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  hasWafi?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  acceptsBanks?: boolean;
+}
+
+// Broker specific filter DTO
+export class BrokerFilterDto extends BaseUserFilterDto {
+  @IsOptional()
+  @IsString()
+  brokerLicenseNumber?: string;
+
+  @IsOptional()
+  @IsString()
+  brokerDescription?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  brokerIsLicensed?: boolean;
+}
 export class UserResponseDto {
   id: string;
   email?: string;
   phoneNumber: string;
+  name: string;
   role: Role;
   createdAt: Date;
   updatedAt: Date;
@@ -51,12 +86,11 @@ export class UserResponseDto {
   isLicensed?: boolean;
   hasWafi?: boolean;
   acceptsBanks?: boolean;
-  companyName?: string;
   description?: string;
   location?: string;
   // Broker fields
   licenseNumber?: string;
+  brokerDescription?: string;
   // Buyer fields
-  name?: string;
   lastName?: string;
 } 

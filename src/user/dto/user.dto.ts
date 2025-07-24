@@ -44,24 +44,24 @@ export class UserDto {
   id: string;
   email?: string;
   phoneNumber: string;
+  name: string;
   role: Role;
   createdAt: Date;
   updatedAt: Date;
   Buyer?: {
-    name?: string;
     lastName?: string;
   };
   Developer?: {
-    companyName?: string;
     isLicensed: boolean;
     hasWafi: boolean;
     acceptsBanks: boolean;
+    description?: string;
+    location?: string;
   };
-  Owner?: {
-    companyName?: string;
-  };
+  Owner?: {};
   Broker?: {
     licenseNumber: string;
     isLicensed: boolean;
+    description?: string;
   };
 } 

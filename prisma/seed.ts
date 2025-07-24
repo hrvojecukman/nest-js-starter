@@ -32,9 +32,7 @@ const generateUser = (role: Role) => {
       return {
         ...baseUser,
         Owner: {
-          create: {
-            companyName: faker.company.name(),
-          },
+          create: {},
         },
       };
     case Role.BROKER:
@@ -56,7 +54,6 @@ const generateUser = (role: Role) => {
             isLicensed: faker.datatype.boolean(),
             hasWafi: faker.datatype.boolean(),
             acceptsBanks: faker.datatype.boolean(),
-            companyName: faker.company.name(),
             description: faker.lorem.paragraph(),
             location: faker.location.city(),
           },

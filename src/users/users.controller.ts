@@ -1,6 +1,6 @@
 import { Controller, Get, Query, Param, UseGuards } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { UsersFilterDto } from './dto/users.dto';
+import { DeveloperFilterDto, BrokerFilterDto, BaseUserFilterDto } from './dto/users.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from 'src/role/roles.decorator';
@@ -12,13 +12,13 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get('developers')
-  findAllDevelopers(@Query() filterDto: UsersFilterDto) {
-    return this.usersService.findAll({ ...filterDto, role: Role.DEVELOPER });
+  findAllDevelopers(@Query() filterDto: DeveloperFilterDto) {
+    return this.usersService.findAllDevelopers(filterDto);
   }
 
   @Get('brokers')
-  findAllBrokers(@Query() filterDto: UsersFilterDto) {
-    return this.usersService.findAll({ ...filterDto, role: Role.BROKER });
+  findAllBrokers(@Query() filterDto: BrokerFilterDto) {
+    return this.usersService.findAllBrokers(filterDto);
   }
 
   @Get('developers/:id')
@@ -33,7 +33,7 @@ export class UsersController {
 
   @Get()
   @Roles(Role.ADMIN)
-  findAll(@Query() filterDto: UsersFilterDto) {
+  findAll(@Query() filterDto: BaseUserFilterDto) {
     return this.usersService.findAll(filterDto);
   }
 
