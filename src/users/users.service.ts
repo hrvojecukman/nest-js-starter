@@ -16,6 +16,7 @@ export class UsersService {
       role: user.role,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
+      profileImage: user.profileImage || undefined,
     };
 
     if (user.Developer) {
