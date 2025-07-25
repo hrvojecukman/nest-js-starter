@@ -79,8 +79,9 @@ export class DeveloperDetailsDto {
   @IsString()
   name: string;
 
-  @IsBoolean()
-  isLicensed: boolean;
+  @IsOptional()
+  @IsString()
+  licenseNumber?: string;
 
   @IsBoolean()
   hasWafi: boolean;
@@ -101,11 +102,9 @@ export class BrokerDetailsDto {
   @IsString()
   name: string;
 
-  @IsBoolean()
-  isLicensed: boolean;
-
+  @IsOptional()
   @IsString()
-  licenseNumber: string;
+  licenseNumber?: string;
 
   @IsOptional()
   @IsString()

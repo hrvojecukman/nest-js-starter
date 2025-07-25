@@ -40,8 +40,7 @@ const generateUser = (role: Role) => {
         ...baseUser,
         Broker: {
           create: {
-            isLicensed: faker.datatype.boolean(),
-            licenseNumber: faker.string.alphanumeric(8).toUpperCase(),
+            licenseNumber: faker.datatype.boolean() ? faker.string.alphanumeric(8).toUpperCase() : null,
             description: faker.lorem.paragraph(),
           },
         },
@@ -51,7 +50,7 @@ const generateUser = (role: Role) => {
         ...baseUser,
         Developer: {
           create: {
-            isLicensed: faker.datatype.boolean(),
+            licenseNumber: faker.datatype.boolean() ? faker.string.alphanumeric(8).toUpperCase() : null,
             hasWafi: faker.datatype.boolean(),
             acceptsBanks: faker.datatype.boolean(),
             description: faker.lorem.paragraph(),

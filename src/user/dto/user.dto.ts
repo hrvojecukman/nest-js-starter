@@ -52,7 +52,7 @@ export class UserDto {
     lastName?: string;
   };
   Developer?: {
-    isLicensed: boolean;
+    licenseNumber?: string;
     hasWafi: boolean;
     acceptsBanks: boolean;
     description?: string;
@@ -60,8 +60,7 @@ export class UserDto {
   };
   Owner?: {};
   Broker?: {
-    licenseNumber: string;
-    isLicensed: boolean;
+    licenseNumber?: string;
     description?: string;
   };
 } 

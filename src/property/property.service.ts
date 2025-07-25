@@ -321,7 +321,6 @@ export class PropertyService {
             Broker: {
               select: {
                 licenseNumber: true,
-                isLicensed: true,
                 description: true,
               }
             }
@@ -358,7 +357,6 @@ export class PropertyService {
         profileImage: property.broker.profileImage,
         role: property.broker.role,
         licenseNumber: property.broker.Broker?.licenseNumber,
-        isLicensed: property.broker.Broker?.isLicensed,
         description: property.broker.Broker?.description,
       } : null
     };

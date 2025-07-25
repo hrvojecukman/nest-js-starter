@@ -22,7 +22,7 @@ export class UsersService {
     if (user.Developer) {
       return {
         ...baseUser,
-        isLicensed: user.Developer.isLicensed,
+        licenseNumber: user.Developer.licenseNumber || undefined,
         hasWafi: user.Developer.hasWafi,
         acceptsBanks: user.Developer.acceptsBanks,
         description: user.Developer.description || undefined,
@@ -33,8 +33,7 @@ export class UsersService {
     if (user.Broker) {
       return {
         ...baseUser,
-        isLicensed: user.Broker.isLicensed,
-        licenseNumber: user.Broker.licenseNumber,
+        licenseNumber: user.Broker.licenseNumber || undefined,
         brokerDescription: user.Broker.description || undefined,
       };
     }
@@ -127,7 +126,8 @@ export class UsersService {
       limit = 10, 
       search, 
       developerLocation,
-      isLicensed,
+      licenseNumber,
+      hasLicense,
       hasWafi,
       acceptsBanks,
       sortBy = 'createdAt',
@@ -153,15 +153,19 @@ export class UsersService {
     }
 
     // Developer specific filters
-    if (developerLocation || isLicensed !== undefined || hasWafi !== undefined || acceptsBanks !== undefined) {
+    if (developerLocation || licenseNumber || hasLicense !== undefined || hasWafi !== undefined || acceptsBanks !== undefined) {
       where.Developer = {
         ...(developerLocation && { location: { contains: developerLocation, mode: 'insensitive' } }),
-        ...(isLicensed !== undefined && { isLicensed }),
+        ...(licenseNumber && { licenseNumber: { contains: licenseNumber, mode: 'insensitive' } }),
+        ...(hasLicense !== undefined && { 
+          licenseNumber: hasLicense ? { not: null } : null 
+        }),
         ...(hasWafi !== undefined && { hasWafi }),
         ...(acceptsBanks !== undefined && { acceptsBanks }),
       };
     }
 
+    
     const [users, total] = await Promise.all([
       this.prisma.user.findMany({
         where,
@@ -196,9 +200,9 @@ export class UsersService {
       page = 1, 
       limit = 10, 
       search, 
-      brokerLicenseNumber,
+      licenseNumber,
+      hasLicense,
       brokerDescription,
-      brokerIsLicensed,
       sortBy = 'createdAt',
       sortOrder = 'desc',
     } = filterDto;
@@ -222,11 +226,13 @@ export class UsersService {
     }
 
     // Broker specific filters
-    if (brokerLicenseNumber || brokerDescription || brokerIsLicensed !== undefined) {
+    if (licenseNumber || hasLicense !== undefined || brokerDescription) {
       where.Broker = {
-        ...(brokerLicenseNumber && { licenseNumber: { contains: brokerLicenseNumber, mode: 'insensitive' } }),
+        ...(licenseNumber && { licenseNumber: { contains: licenseNumber, mode: 'insensitive' } }),
+        ...(hasLicense !== undefined && { 
+          licenseNumber: hasLicense ? { not: null } : null 
+        }),
         ...(brokerDescription && { description: { contains: brokerDescription, mode: 'insensitive' } }),
-        ...(brokerIsLicensed !== undefined && { isLicensed: brokerIsLicensed }),
       };
     }
 

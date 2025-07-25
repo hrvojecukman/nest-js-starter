@@ -48,8 +48,12 @@ export class DeveloperFilterDto extends BaseUserFilterDto {
   developerLocation?: string;
 
   @IsOptional()
+  @IsString()
+  licenseNumber?: string;
+
+  @IsOptional()
   @IsBoolean()
-  isLicensed?: boolean;
+  hasLicense?: boolean;
 
   @IsOptional()
   @IsBoolean()
@@ -64,15 +68,15 @@ export class DeveloperFilterDto extends BaseUserFilterDto {
 export class BrokerFilterDto extends BaseUserFilterDto {
   @IsOptional()
   @IsString()
-  brokerLicenseNumber?: string;
+  licenseNumber?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  hasLicense?: boolean;
 
   @IsOptional()
   @IsString()
   brokerDescription?: string;
-
-  @IsOptional()
-  @IsBoolean()
-  brokerIsLicensed?: boolean;
 }
 export class UserResponseDto {
   id: string;
@@ -82,14 +86,15 @@ export class UserResponseDto {
   role: Role;
   createdAt: Date;
   updatedAt: Date;
+  licenseNumber?: string;
+  hasLicense?: boolean;
+  profileImage?: string;
   // Developer fields
-  isLicensed?: boolean;
   hasWafi?: boolean;
   acceptsBanks?: boolean;
   description?: string;
   location?: string;
   // Broker fields
-  licenseNumber?: string;
   brokerDescription?: string;
   // Buyer fields
   lastName?: string;

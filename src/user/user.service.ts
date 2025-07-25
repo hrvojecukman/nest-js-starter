@@ -35,7 +35,6 @@ export class UserService {
         Owner: true,
         Developer: {
           select: {
-            isLicensed: true,
             hasWafi: true,
             acceptsBanks: true,
             description: true,
@@ -44,7 +43,6 @@ export class UserService {
         },
         Broker: {
           select: {
-            isLicensed: true,
             licenseNumber: true,
           },
         },
@@ -132,12 +130,11 @@ export class UserService {
 
   private async updateDeveloperDetails(userId: string, details: DeveloperDetailsDto) {
     if (
-      details.isLicensed === undefined ||
       details.hasWafi === undefined ||
       details.acceptsBanks === undefined
     ) {
       throw new BadRequestException(
-        'isLicensed, hasWafi, and acceptsBanks are required for Developer',
+        'hasWafi and acceptsBanks are required for Developer',
       );
     }
 
@@ -149,7 +146,7 @@ export class UserService {
       await this.prisma.developer.update({
         where: { id: userId },
         data: {
-          isLicensed: details.isLicensed,
+          licenseNumber: details.licenseNumber,
           hasWafi: details.hasWafi,
           acceptsBanks: details.acceptsBanks,
           description: details.description,
@@ -160,7 +157,7 @@ export class UserService {
       await this.prisma.developer.create({
         data: {
           id: userId,
-          isLicensed: details.isLicensed,
+          licenseNumber: details.licenseNumber,
           hasWafi: details.hasWafi,
           acceptsBanks: details.acceptsBanks,
           description: details.description,
@@ -173,10 +170,6 @@ export class UserService {
   }
 
   private async updateBrokerDetails(userId: string, details: BrokerDetailsDto) {
-    if (details.isLicensed === undefined || !details.licenseNumber) {
-      throw new BadRequestException('License details are required for Broker');
-    }
-
     const existingBroker = await this.prisma.broker.findUnique({
       where: { id: userId },
     });
@@ -185,7 +178,6 @@ export class UserService {
       await this.prisma.broker.update({
         where: { id: userId },
         data: {
-          isLicensed: details.isLicensed,
           licenseNumber: details.licenseNumber,
           description: details.description,
         },
@@ -194,7 +186,6 @@ export class UserService {
       await this.prisma.broker.create({
         data: {
           id: userId,
-          isLicensed: details.isLicensed,
           licenseNumber: details.licenseNumber,
           description: details.description,
         },
@@ -243,7 +234,6 @@ export class UserService {
         });
         return (
           developer !== null &&
-          developer.isLicensed !== undefined &&
           developer.hasWafi !== undefined &&
           developer.acceptsBanks !== undefined
         );
@@ -253,7 +243,7 @@ export class UserService {
         const broker = await this.prisma.broker.findUnique({
           where: { id: userId },
         });
-        return broker !== null && broker.isLicensed !== undefined && !!broker.licenseNumber;
+        return broker !== null;
       }
 
       case Role.ADMIN:

@@ -35,13 +35,13 @@ model Buyer {
 }
 
 model Developer {
-  id           String  @id @default(uuid()) @map("user_id")
-  isLicensed   Boolean
-  hasWafi      Boolean
-  acceptsBanks Boolean
-  description  String?
-  location     String?
-  user         User    @relation(fields: [id], references: [id])
+  id            String  @id @default(uuid()) @map("user_id")
+  licenseNumber String?
+  hasWafi       Boolean
+  acceptsBanks  Boolean
+  description   String?
+  location      String?
+  user          User    @relation(fields: [id], references: [id])
 }
 
 model Owner {
@@ -51,8 +51,7 @@ model Owner {
 
 model Broker {
   id            String  @id @default(uuid()) @map("user_id")
-  isLicensed    Boolean
-  licenseNumber String
+  licenseNumber String?
   description   String?
   user          User    @relation(fields: [id], references: [id])
 }
