@@ -45,8 +45,15 @@ model Developer {
 }
 
 model Owner {
-  id   String @id @default(uuid()) @map("user_id")
-  user User   @relation(fields: [id], references: [id])
+  id                                String       @id @default(uuid()) @map("user_id")
+  lastName                          String
+  doesOwnProperty                   Boolean
+  propertyType                      PropertyType
+  doesOwnPropertyWithElectronicDeed Boolean
+  purposeOfRegistration             Int
+  developerPartnership              Int
+  lookingForDeveloperPartnership    Boolean
+  user                              User         @relation(fields: [id], references: [id])
 }
 
 model Broker {

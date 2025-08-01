@@ -5,7 +5,6 @@ import { Request } from 'express';
 import { JwtUser } from 'src/auth/auth.controller';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
-  OwnerDetailsDto,
   DeveloperDetailsDto,
   BuyerDetailsDto,
 } from '../auth/dto/auth.dto';
@@ -28,12 +27,6 @@ export class UserController {
     return this.userService.updateRoleDetails(user.userId, dto);
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Post('complete-profile/owner')
-  async updateOwnerDetails(@Body() dto: OwnerDetailsDto, @Req() req: Request) {
-    const user = req.user as JwtUser;
-    return this.userService.updateRoleDetails(user.userId, dto);
-  }
 
   @UseGuards(JwtAuthGuard)
   @Post('complete-profile/developer')

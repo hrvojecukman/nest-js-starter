@@ -106,6 +106,15 @@ export class UserResponseDto {
   acceptsBanks?: boolean;
   description?: string;
   location?: string;
+  // Owner fields
+  ownerLastName?: string;
+  doesOwnProperty?: boolean;
+  propertyType?: string;
+  doesOwnPropertyWithElectronicDeed?: boolean;
+  purposeOfRegistration?: number;
+  developerPartnership?: number;
+  lookingForDeveloperPartnership?: boolean;
+
   // Broker fields
   brokerDescription?: string;
   brokerLastName?: string;

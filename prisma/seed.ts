@@ -32,7 +32,15 @@ const generateUser = (role: Role) => {
       return {
         ...baseUser,
         Owner: {
-          create: {},
+          create: {
+            lastName: faker.person.lastName(),
+            doesOwnProperty: faker.datatype.boolean(),
+            propertyType: faker.helpers.arrayElement(Object.values(PropertyType)),
+            doesOwnPropertyWithElectronicDeed: faker.datatype.boolean(),
+            purposeOfRegistration: faker.number.int({ min: 1, max: 5 }),
+            developerPartnership: faker.number.int({ min: 1, max: 3 }),
+            lookingForDeveloperPartnership: faker.datatype.boolean(),
+          },
         },
       };
     case Role.BROKER:
@@ -41,7 +49,7 @@ const generateUser = (role: Role) => {
         Broker: {
           create: {
             lastName: faker.person.lastName(),
-            licenseNumber: faker.datatype.boolean() ? faker.string.alphanumeric(8).toUpperCase() : null,
+            licenseNumber: faker.string.alphanumeric(8).toUpperCase(),
             description: faker.lorem.paragraph(),
             typeOfProperties: getRandomEnums(PropertyType, faker.number.int({ min: 1, max: 3 })),
             expectedNumberOfAdsPerMonth: faker.number.int({ min: 1, max: 20 }),

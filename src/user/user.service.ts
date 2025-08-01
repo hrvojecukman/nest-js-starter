@@ -125,10 +125,30 @@ export class UserService {
     });
 
     if (existingOwner) {
-      return { success: true, role: Role.OWNER };
+      await this.prisma.owner.update({
+        where: { id: userId },
+        data: {
+          lastName: details.lastName,
+          doesOwnProperty: details.doesOwnProperty,
+          propertyType: details.propertyType,
+          doesOwnPropertyWithElectronicDeed: details.doesOwnPropertyWithElectronicDeed,
+          purposeOfRegistration: details.purposeOfRegistration,
+          developerPartnership: details.developerPartnership,
+          lookingForDeveloperPartnership: details.lookingForDeveloperPartnership,
+        },
+      });
     } else {
       await this.prisma.owner.create({
-        data: { id: userId },
+        data: {
+          id: userId,
+          lastName: details.lastName,
+          doesOwnProperty: details.doesOwnProperty,
+          propertyType: details.propertyType,
+          doesOwnPropertyWithElectronicDeed: details.doesOwnPropertyWithElectronicDeed,
+          purposeOfRegistration: details.purposeOfRegistration,
+          developerPartnership: details.developerPartnership,
+          lookingForDeveloperPartnership: details.lookingForDeveloperPartnership,
+        },
       });
     }
 
@@ -244,7 +264,7 @@ export class UserService {
         const owner = await this.prisma.owner.findUnique({
           where: { id: userId },
         });
-        return !!owner;
+        return !!owner?.lastName && !!owner?.doesOwnProperty && !!owner?.propertyType && !!owner?.doesOwnPropertyWithElectronicDeed && !!owner?.purposeOfRegistration && !!owner?.developerPartnership && !!owner?.lookingForDeveloperPartnership;
       }
 
       case Role.DEVELOPER: {

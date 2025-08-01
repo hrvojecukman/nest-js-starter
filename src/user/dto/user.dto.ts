@@ -58,7 +58,15 @@ export class UserDto {
     description?: string;
     location?: string;
   };
-  Owner?: {};
+  Owner?: {
+    lastName?: string;
+    doesOwnProperty?: boolean;
+    propertyType?: string;
+    doesOwnPropertyWithElectronicDeed?: boolean;
+    purposeOfRegistration?: number;
+    developerPartnership?: number;
+    lookingForDeveloperPartnership?: boolean;
+  };
   Broker?: {
     lastName?: string;
     licenseNumber?: string;

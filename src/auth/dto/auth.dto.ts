@@ -60,11 +60,6 @@ export class BuyerDetailsDto {
   lastName: string;
 }
 
-export class OwnerDetailsDto {
-  @IsString()
-  name: string;
-}
-
 export class DeveloperDetailsDto {
   @IsString()
   name: string;
@@ -125,6 +120,34 @@ export class BrokerDetailsDto {
   @IsOptional()
   @IsBoolean()
   wantsAdvertising?: boolean;
+}
+
+export class OwnerDetailsDto {
+  @IsString()
+  name: string;
+
+  @IsString()
+  lastName: string;
+
+  @IsBoolean()
+  doesOwnProperty: boolean;
+
+  @IsEnum(PropertyType)
+  propertyType: PropertyType;
+
+  @IsBoolean()
+  doesOwnPropertyWithElectronicDeed: boolean;
+
+  @IsNumber()
+  @Min(1)
+  purposeOfRegistration: number;
+
+  @IsNumber()
+  @Min(1)
+  developerPartnership: number;
+
+  @IsBoolean()
+  lookingForDeveloperPartnership: boolean;
 }
 
 

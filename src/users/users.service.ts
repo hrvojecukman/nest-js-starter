@@ -47,6 +47,13 @@ export class UsersService {
     if (user.Owner) {
       return {
         ...baseUser,
+        ownerLastName: user.Owner.lastName || undefined,
+        doesOwnProperty: user.Owner.doesOwnProperty || undefined,
+        propertyType: user.Owner.propertyType || undefined,
+        doesOwnPropertyWithElectronicDeed: user.Owner.doesOwnPropertyWithElectronicDeed || undefined,
+        purposeOfRegistration: user.Owner.purposeOfRegistration || undefined,
+        developerPartnership: user.Owner.developerPartnership || undefined,
+        lookingForDeveloperPartnership: user.Owner.lookingForDeveloperPartnership || undefined,
       };
     }
 

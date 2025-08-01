@@ -1,6 +1,6 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { RegistrationService } from './registration.service';
-import { InitiateRegistrationDto, RegisterBrokerDto } from './dto/registration.dto';
+import { InitiateRegistrationDto, RegisterBrokerDto, RegisterOwnerDto } from './dto/registration.dto';
 
 @Controller('registration')
 export class RegistrationController {
@@ -14,5 +14,10 @@ export class RegistrationController {
   @Post('broker')
   async registerBroker(@Body() dto: RegisterBrokerDto) {
     return this.registrationService.registerBroker(dto);
+  }
+
+  @Post('owner')
+  async registerOwner(@Body() dto: RegisterOwnerDto) {
+    return this.registrationService.registerOwner(dto);
   }
 } 
