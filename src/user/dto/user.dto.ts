@@ -71,7 +71,7 @@ export class UserDto {
     lastName?: string;
     licenseNumber?: string;
     description?: string;
-    typeOfProperties?: string[];
+    propertyType?: string;
     expectedNumberOfAdsPerMonth?: number;
     hasExecutedSalesTransaction?: boolean;
     useDigitalPromotion?: boolean;

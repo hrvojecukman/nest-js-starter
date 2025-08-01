@@ -27,35 +27,28 @@ export class RegisterBrokerDto {
   @IsString()
   otpCode: string;
 
-  @IsOptional()
   @IsString()
-  licenseNumber?: string;
+  licenseNumber: string;
 
   @IsOptional()
   @IsString()
   description?: string;
 
-  @IsOptional()
-  @IsArray()
-  @IsEnum(PropertyType, { each: true })
-  typeOfProperties?: PropertyType[];
+  @IsEnum(PropertyType)
+  propertyType: PropertyType;
 
-  @IsOptional()
   @IsNumber()
   @Min(1)
-  expectedNumberOfAdsPerMonth?: number;
+  expectedNumberOfAdsPerMonth: number;
 
-  @IsOptional()
   @IsBoolean()
-  hasExecutedSalesTransaction?: boolean;
+  hasExecutedSalesTransaction: boolean;
 
-  @IsOptional()
   @IsBoolean()
-  useDigitalPromotion?: boolean;
+  useDigitalPromotion: boolean;
 
-  @IsOptional()
   @IsBoolean()
-  wantsAdvertising?: boolean;
+  wantsAdvertising: boolean;
 }
 
 export class RegisterOwnerDto {

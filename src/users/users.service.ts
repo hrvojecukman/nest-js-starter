@@ -36,7 +36,7 @@ export class UsersService {
         licenseNumber: user.Broker.licenseNumber || undefined,
         brokerDescription: user.Broker.description || undefined,
         brokerLastName: user.Broker.lastName || undefined,
-        typeOfProperties: user.Broker.typeOfProperties || undefined,
+        brokerPropertyType: user.Broker.propertyType || undefined,
         expectedNumberOfAdsPerMonth: user.Broker.expectedNumberOfAdsPerMonth || undefined,
         hasExecutedSalesTransaction: user.Broker.hasExecutedSalesTransaction || undefined,
         useDigitalPromotion: user.Broker.useDigitalPromotion || undefined,
@@ -214,7 +214,6 @@ export class UsersService {
       limit = 10, 
       search, 
       licenseNumber,
-      hasLicense,
       brokerDescription,
       hasExecutedSalesTransaction,
       useDigitalPromotion,
@@ -242,12 +241,9 @@ export class UsersService {
     }
 
     // Broker specific filters
-    if (licenseNumber || hasLicense !== undefined || brokerDescription || hasExecutedSalesTransaction !== undefined || useDigitalPromotion !== undefined || wantsAdvertising !== undefined) {
+    if (licenseNumber || brokerDescription || hasExecutedSalesTransaction !== undefined || useDigitalPromotion !== undefined || wantsAdvertising !== undefined) {
       where.Broker = {
         ...(licenseNumber && { licenseNumber: { contains: licenseNumber, mode: 'insensitive' } }),
-        ...(hasLicense !== undefined && { 
-          licenseNumber: hasLicense ? { not: null } : null 
-        }),
         ...(brokerDescription && { description: { contains: brokerDescription, mode: 'insensitive' } }),
         ...(hasExecutedSalesTransaction !== undefined && { hasExecutedSalesTransaction }),
         ...(useDigitalPromotion !== undefined && { useDigitalPromotion }),

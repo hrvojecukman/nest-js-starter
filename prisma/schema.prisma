@@ -57,16 +57,16 @@ model Owner {
 }
 
 model Broker {
-  id                          String         @id @default(uuid()) @map("user_id")
-  lastName                    String?
-  licenseNumber               String?
+  id                          String       @id @default(uuid()) @map("user_id")
+  lastName                    String
+  licenseNumber               String
   description                 String?
-  typeOfProperties            PropertyType[]
-  expectedNumberOfAdsPerMonth Int?
-  hasExecutedSalesTransaction Boolean?
-  useDigitalPromotion         Boolean?
-  wantsAdvertising            Boolean?
-  user                        User           @relation(fields: [id], references: [id])
+  propertyType                PropertyType
+  expectedNumberOfAdsPerMonth Int
+  hasExecutedSalesTransaction Boolean
+  useDigitalPromotion         Boolean
+  wantsAdvertising            Boolean
+  user                        User         @relation(fields: [id], references: [id])
 }
 
 model Payment {

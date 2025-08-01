@@ -118,7 +118,7 @@ export class UserResponseDto {
   // Broker fields
   brokerDescription?: string;
   brokerLastName?: string;
-  typeOfProperties?: string[];
+  brokerPropertyType?: string;
   expectedNumberOfAdsPerMonth?: number;
   hasExecutedSalesTransaction?: boolean;
   useDigitalPromotion?: boolean;

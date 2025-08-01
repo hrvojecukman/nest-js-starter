@@ -46,7 +46,7 @@ export class UserService {
             lastName: true,
             licenseNumber: true,
             description: true,
-            typeOfProperties: true,
+            propertyType: true,
             expectedNumberOfAdsPerMonth: true,
             hasExecutedSalesTransaction: true,
             useDigitalPromotion: true,
@@ -208,7 +208,7 @@ export class UserService {
           lastName: details.lastName,
           licenseNumber: details.licenseNumber,
           description: details.description,
-          typeOfProperties: details.typeOfProperties,
+          propertyType: details.propertyType,
           expectedNumberOfAdsPerMonth: details.expectedNumberOfAdsPerMonth,
           hasExecutedSalesTransaction: details.hasExecutedSalesTransaction,
           useDigitalPromotion: details.useDigitalPromotion,
@@ -222,7 +222,7 @@ export class UserService {
           lastName: details.lastName,
           licenseNumber: details.licenseNumber,
           description: details.description,
-          typeOfProperties: details.typeOfProperties,
+          propertyType: details.propertyType,
           expectedNumberOfAdsPerMonth: details.expectedNumberOfAdsPerMonth,
           hasExecutedSalesTransaction: details.hasExecutedSalesTransaction,
           useDigitalPromotion: details.useDigitalPromotion,
@@ -284,7 +284,7 @@ export class UserService {
         });
         return (
           broker !== null &&
-          broker.typeOfProperties !== null &&
+          broker.propertyType !== null &&
           broker.expectedNumberOfAdsPerMonth !== null &&
           broker.hasExecutedSalesTransaction !== null &&
           broker.useDigitalPromotion !== null &&

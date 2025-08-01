@@ -67,7 +67,7 @@ export class RegistrationService {
             lastName: dto.lastName,
             licenseNumber: dto.licenseNumber,
             description: dto.description,
-            typeOfProperties: dto.typeOfProperties,
+            propertyType: dto.propertyType,
             expectedNumberOfAdsPerMonth: dto.expectedNumberOfAdsPerMonth,
             hasExecutedSalesTransaction: dto.hasExecutedSalesTransaction,
             useDigitalPromotion: dto.useDigitalPromotion,
