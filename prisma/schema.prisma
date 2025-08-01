@@ -51,6 +51,7 @@ model Owner {
 
 model Broker {
   id                          String         @id @default(uuid()) @map("user_id")
+  lastName                    String?
   licenseNumber               String?
   description                 String?
   typeOfProperties            PropertyType[]

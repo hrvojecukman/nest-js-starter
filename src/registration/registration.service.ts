@@ -13,7 +13,7 @@ export class RegistrationService {
     private readonly authService: AuthService,
   ) {}
 
-  private async checkUserExists(phoneNumber: string, email: string) {
+  private async checkUserExists(phoneNumber: string, email?: string) {
     const existingUserByPhone = await this.prisma.user.findUnique({
       where: { phoneNumber },
     });
@@ -22,12 +22,14 @@ export class RegistrationService {
       throw new ConflictException('User with this phone number already exists');
     }
 
+    if (email) {
     const existingUserByEmail = await this.prisma.user.findUnique({
       where: { email },
     });
 
-    if (existingUserByEmail) {
-      throw new ConflictException('User with this email already exists');
+      if (existingUserByEmail) {
+        throw new ConflictException('User with this email already exists');
+      }
     }
   }
 
@@ -63,6 +65,7 @@ export class RegistrationService {
         role: Role.BROKER,
         Broker: {
           create: {
+            lastName: dto.lastName,
             licenseNumber: dto.licenseNumber,
             description: dto.description,
             typeOfProperties: dto.typeOfProperties,

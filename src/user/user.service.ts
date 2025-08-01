@@ -43,6 +43,7 @@ export class UserService {
         },
         Broker: {
           select: {
+            lastName: true,
             licenseNumber: true,
             description: true,
             typeOfProperties: true,
@@ -184,6 +185,7 @@ export class UserService {
       await this.prisma.broker.update({
         where: { id: userId },
         data: {
+          lastName: details.lastName,
           licenseNumber: details.licenseNumber,
           description: details.description,
           typeOfProperties: details.typeOfProperties,
@@ -197,6 +199,7 @@ export class UserService {
       await this.prisma.broker.create({
         data: {
           id: userId,
+          lastName: details.lastName,
           licenseNumber: details.licenseNumber,
           description: details.description,
           typeOfProperties: details.typeOfProperties,

@@ -60,6 +60,7 @@ export class UserDto {
   };
   Owner?: {};
   Broker?: {
+    lastName?: string;
     licenseNumber?: string;
     description?: string;
     typeOfProperties?: string[];

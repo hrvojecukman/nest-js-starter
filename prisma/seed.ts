@@ -40,6 +40,7 @@ const generateUser = (role: Role) => {
         ...baseUser,
         Broker: {
           create: {
+            lastName: faker.person.lastName(),
             licenseNumber: faker.datatype.boolean() ? faker.string.alphanumeric(8).toUpperCase() : null,
             description: faker.lorem.paragraph(),
             typeOfProperties: getRandomEnums(PropertyType, faker.number.int({ min: 1, max: 3 })),

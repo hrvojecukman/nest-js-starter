@@ -35,6 +35,7 @@ export class UsersService {
         ...baseUser,
         licenseNumber: user.Broker.licenseNumber || undefined,
         brokerDescription: user.Broker.description || undefined,
+        brokerLastName: user.Broker.lastName || undefined,
         typeOfProperties: user.Broker.typeOfProperties || undefined,
         expectedNumberOfAdsPerMonth: user.Broker.expectedNumberOfAdsPerMonth || undefined,
         hasExecutedSalesTransaction: user.Broker.hasExecutedSalesTransaction || undefined,

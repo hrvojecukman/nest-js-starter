@@ -94,6 +94,10 @@ export class BrokerDetailsDto {
 
   @IsOptional()
   @IsString()
+  lastName?: string;
+
+  @IsOptional()
+  @IsString()
   licenseNumber?: string;
 
   @IsOptional()
