@@ -87,6 +87,7 @@ export class ProjectService {
     id: developer.id,
     name: developer.name ?? undefined,
     profileImage: developer.profileImage ?? undefined,
+    isLicensed: developer.Developer?.isLicensed ?? undefined,
     hasWafi: developer.Developer?.hasWafi ?? undefined,
     acceptsBanks: developer.Developer?.acceptsBanks ?? undefined,
     description: developer.Developer?.description ?? undefined,

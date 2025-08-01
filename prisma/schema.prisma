@@ -50,10 +50,15 @@ model Owner {
 }
 
 model Broker {
-  id            String  @id @default(uuid()) @map("user_id")
-  licenseNumber String?
-  description   String?
-  user          User    @relation(fields: [id], references: [id])
+  id                          String         @id @default(uuid()) @map("user_id")
+  licenseNumber               String?
+  description                 String?
+  typeOfProperties            PropertyType[]
+  expectedNumberOfAdsPerMonth Int?
+  hasExecutedSalesTransaction Boolean?
+  useDigitalPromotion         Boolean?
+  wantsAdvertising            Boolean?
+  user                        User           @relation(fields: [id], references: [id])
 }
 
 model Payment {
@@ -193,6 +198,7 @@ enum PaymentStatus {
 enum PropertyType {
   residential
   commercial
+  residentialAndCommercial
 }
 
 enum PropertyCategory {

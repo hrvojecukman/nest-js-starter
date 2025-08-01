@@ -1,6 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { InitiateLoginDto, Role, VerifyLoginOtpDto } from './dto/auth.dto';
+import { Role } from '@prisma/client';
+import { InitiateLoginDto, VerifyLoginOtpDto } from './dto/auth.dto';
 import { JwtService } from '@nestjs/jwt';
 import { TwilioService } from '../twilio/twilio.service';
 import { UserService } from '../user/user.service';
@@ -28,6 +29,8 @@ export class AuthService {
       phoneNumber: dto.phoneNumber,
     };
   }
+
+
 
   async verifyOtpAndLogin(dto: VerifyLoginOtpDto) {
     // Verify OTP first
@@ -82,7 +85,7 @@ export class AuthService {
     };
   }
 
-  private async generateTokens(userId: string, phoneNumber: string, role: Role) {
+  async generateTokens(userId: string, phoneNumber: string, role: Role) {
     const accessToken = await this.jwtService.signAsync(
       { sub: userId, phoneNumber, role },
       { secret: process.env.JWT_SECRET, expiresIn: '60m' },
@@ -110,4 +113,6 @@ export class AuthService {
   logout() {
     return { success: true };
   }
+
+
 }

@@ -42,6 +42,11 @@ const generateUser = (role: Role) => {
           create: {
             licenseNumber: faker.datatype.boolean() ? faker.string.alphanumeric(8).toUpperCase() : null,
             description: faker.lorem.paragraph(),
+            typeOfProperties: getRandomEnums(PropertyType, faker.number.int({ min: 1, max: 3 })),
+            expectedNumberOfAdsPerMonth: faker.number.int({ min: 1, max: 20 }),
+            hasExecutedSalesTransaction: faker.datatype.boolean(),
+            useDigitalPromotion: faker.datatype.boolean(),
+            wantsAdvertising: faker.datatype.boolean(),
           },
         },
       };

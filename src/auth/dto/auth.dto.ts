@@ -1,4 +1,5 @@
-import { IsEmail, IsEnum, IsOptional, IsString, IsBoolean, Matches } from 'class-validator';
+import { IsEmail, IsEnum, IsOptional, IsString, IsBoolean, Matches, IsArray, IsNumber, Min } from 'class-validator';
+import { PropertyType } from '@prisma/client';
 
 export enum Role {
   BUYER = 'BUYER',
@@ -8,18 +9,7 @@ export enum Role {
   ADMIN = 'ADMIN',
 }
 
-export class InitiateRegistrationDto {
-  @IsEmail()
-  email: string;
 
-  @Matches(/^\+[1-9]\d{1,14}$/, {
-    message: 'Phone number must be in E.164 format (e.g., +14155552671)',
-  })
-  phoneNumber: string;
-
-  @IsEnum(Role)
-  role!: Role;
-}
 
 export class InitiateLoginDto {
   @Matches(/^\+[1-9]\d{1,14}$/, {
@@ -109,4 +99,28 @@ export class BrokerDetailsDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsEnum(PropertyType, { each: true })
+  typeOfProperties?: PropertyType[];
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  expectedNumberOfAdsPerMonth?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  hasExecutedSalesTransaction?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  useDigitalPromotion?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  wantsAdvertising?: boolean;
 }
+
+

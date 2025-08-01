@@ -77,6 +77,18 @@ export class BrokerFilterDto extends BaseUserFilterDto {
   @IsOptional()
   @IsString()
   brokerDescription?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  hasExecutedSalesTransaction?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  useDigitalPromotion?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  wantsAdvertising?: boolean;
 }
 export class UserResponseDto {
   id: string;
@@ -96,6 +108,11 @@ export class UserResponseDto {
   location?: string;
   // Broker fields
   brokerDescription?: string;
+  typeOfProperties?: string[];
+  expectedNumberOfAdsPerMonth?: number;
+  hasExecutedSalesTransaction?: boolean;
+  useDigitalPromotion?: boolean;
+  wantsAdvertising?: boolean;
   // Buyer fields
   lastName?: string;
 } 

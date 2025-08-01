@@ -623,25 +623,21 @@ Pre-defined notification templates.
 | Field          | Type      | Description               | Constraints                            |
 | -------------- | --------- | ------------------------- | -------------------------------------- |
 | `id`           | `String`  | User ID reference         | `@id @default(uuid()) @map("user_id")` |
-| `isLicensed`   | `Boolean` | Developer license status  | -                                      |
 | `hasWafi`      | `Boolean` | Wafi certification        | -                                      |
 | `acceptsBanks` | `Boolean` | Bank financing acceptance | -                                      |
-| `companyName`  | `String?` | Company name              | -                                      |
 
 #### 🏢 Owner Profile
 
-| Field         | Type      | Description       | Constraints                            |
-| ------------- | --------- | ----------------- | -------------------------------------- |
-| `id`          | `String`  | User ID reference | `@id @default(uuid()) @map("user_id")` |
-| `companyName` | `String?` | Company name      | -                                      |
+| Field | Type     | Description       | Constraints                            |
+| ----- | -------- | ----------------- | -------------------------------------- |
+| `id`  | `String` | User ID reference | `@id @default(uuid()) @map("user_id")` |
 
 #### 🏠 Broker Profile
 
-| Field           | Type      | Description           | Constraints                            |
-| --------------- | --------- | --------------------- | -------------------------------------- |
-| `id`            | `String`  | User ID reference     | `@id @default(uuid()) @map("user_id")` |
-| `isLicensed`    | `Boolean` | Broker license status | -                                      |
-| `licenseNumber` | `String`  | License number        | -                                      |
+| Field           | Type     | Description       | Constraints                            |
+| --------------- | -------- | ----------------- | -------------------------------------- |
+| `id`            | `String` | User ID reference | `@id @default(uuid()) @map("user_id")` |
+| `licenseNumber` | `String` | License number    | -                                      |
 
 ### 📋 Enums
 

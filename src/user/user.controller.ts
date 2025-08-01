@@ -7,7 +7,6 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import {
   OwnerDetailsDto,
   DeveloperDetailsDto,
-  BrokerDetailsDto,
   BuyerDetailsDto,
 } from '../auth/dto/auth.dto';
 
@@ -43,12 +42,6 @@ export class UserController {
     return this.userService.updateRoleDetails(user.userId, dto);
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Post('complete-profile/broker')
-  async updateBrokerDetails(@Body() dto: BrokerDetailsDto, @Req() req: Request) {
-    const user = req.user as JwtUser;
-    return this.userService.updateRoleDetails(user.userId, dto);
-  }
 
   // Profile Image CRUD APIs
   @UseGuards(JwtAuthGuard)

@@ -44,6 +44,12 @@ export class UserService {
         Broker: {
           select: {
             licenseNumber: true,
+            description: true,
+            typeOfProperties: true,
+            expectedNumberOfAdsPerMonth: true,
+            hasExecutedSalesTransaction: true,
+            useDigitalPromotion: true,
+            wantsAdvertising: true,
           },
         },
       },
@@ -180,6 +186,11 @@ export class UserService {
         data: {
           licenseNumber: details.licenseNumber,
           description: details.description,
+          typeOfProperties: details.typeOfProperties,
+          expectedNumberOfAdsPerMonth: details.expectedNumberOfAdsPerMonth,
+          hasExecutedSalesTransaction: details.hasExecutedSalesTransaction,
+          useDigitalPromotion: details.useDigitalPromotion,
+          wantsAdvertising: details.wantsAdvertising,
         },
       });
     } else {
@@ -188,6 +199,11 @@ export class UserService {
           id: userId,
           licenseNumber: details.licenseNumber,
           description: details.description,
+          typeOfProperties: details.typeOfProperties,
+          expectedNumberOfAdsPerMonth: details.expectedNumberOfAdsPerMonth,
+          hasExecutedSalesTransaction: details.hasExecutedSalesTransaction,
+          useDigitalPromotion: details.useDigitalPromotion,
+          wantsAdvertising: details.wantsAdvertising,
         },
       });
     }
@@ -243,7 +259,14 @@ export class UserService {
         const broker = await this.prisma.broker.findUnique({
           where: { id: userId },
         });
-        return broker !== null;
+        return (
+          broker !== null &&
+          broker.typeOfProperties !== null &&
+          broker.expectedNumberOfAdsPerMonth !== null &&
+          broker.hasExecutedSalesTransaction !== null &&
+          broker.useDigitalPromotion !== null &&
+          broker.wantsAdvertising !== null
+        );
       }
 
       case Role.ADMIN:

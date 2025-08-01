@@ -62,5 +62,10 @@ export class UserDto {
   Broker?: {
     licenseNumber?: string;
     description?: string;
+    typeOfProperties?: string[];
+    expectedNumberOfAdsPerMonth?: number;
+    hasExecutedSalesTransaction?: boolean;
+    useDigitalPromotion?: boolean;
+    wantsAdvertising?: boolean;
   };
 } 
