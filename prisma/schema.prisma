@@ -35,13 +35,49 @@ model Buyer {
 }
 
 model Developer {
-  id            String  @id @default(uuid()) @map("user_id")
+  id String @id @default(uuid()) @map("user_id")
+
+  // Company info
+  companyName        String
+  entityType         EntityType
+  developerCity      String
+  propertyType       PropertyType
+  annualProjectCount AnnualProjectCount
+  totalNumberOfUnits TotalNumberOfUnits
+
+  // Representative info
+  representativeName     String
+  representativePhone    String
+  representativePosition String
+  representativeEmail    String
+
+  // Social/Contact
+  websiteUrl         String?
+  xAccountUrl        String?
+  snapchatAccountUrl String?
+  linkedinAccountUrl String?
+
+  // Existing fields (made optional)
   licenseNumber String?
-  hasWafi       Boolean
-  acceptsBanks  Boolean
+  hasWafi       Boolean?
+  acceptsBanks  Boolean?
   description   String?
   location      String?
-  user          User    @relation(fields: [id], references: [id])
+
+  // Relations
+  documents DeveloperDocument[]
+  user      User                @relation(fields: [id], references: [id])
+}
+
+model DeveloperDocument {
+  id           String                @id @default(uuid())
+  developerId  String
+  developer    Developer             @relation(fields: [developerId], references: [id])
+  mediaId      String
+  media        Media                 @relation(fields: [mediaId], references: [id])
+  documentType DeveloperDocumentType
+
+  @@unique([developerId, mediaId])
 }
 
 model Owner {
@@ -81,16 +117,17 @@ model Payment {
 }
 
 model Media {
-  id         String    @id @default(uuid())
-  type       MediaType
-  url        String
-  key        String
-  propertyId String?
-  projectId  String?
-  createdAt  DateTime  @default(now())
-  name       String?
-  project    Project?  @relation(fields: [projectId], references: [id])
-  property   Property? @relation(fields: [propertyId], references: [id])
+  id                String              @id @default(uuid())
+  type              MediaType
+  url               String
+  key               String
+  propertyId        String?
+  projectId         String?
+  createdAt         DateTime            @default(now())
+  name              String?
+  project           Project?            @relation(fields: [projectId], references: [id])
+  property          Property?           @relation(fields: [propertyId], references: [id])
+  DeveloperDocument DeveloperDocument[]
 
   @@index([propertyId])
   @@index([projectId])
@@ -262,4 +299,29 @@ enum ProjectTimelineType {
   start
   underConstruction
   completed
+}
+
+enum DeveloperDocumentType {
+  commercialRegistration
+  taxCertificate
+  valBrokerageLicense
+  realEstateDevelopmentLicense
+  officialCompanyLogo
+}
+
+enum AnnualProjectCount {
+  from1To4
+  from5To9
+  moreThan10
+}
+
+enum TotalNumberOfUnits {
+  from1To15
+  from16To30
+  moreThan30
+}
+
+enum EntityType {
+  company
+  institution
 }

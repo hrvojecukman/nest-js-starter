@@ -35,6 +35,21 @@ export class UserService {
         Owner: true,
         Developer: {
           select: {
+            companyName: true,
+            entityType: true,
+            developerCity: true,
+            propertyType: true,
+            annualProjectCount: true,
+            totalNumberOfUnits: true,
+            representativeName: true,
+            representativePhone: true,
+            representativePosition: true,
+            representativeEmail: true,
+            websiteUrl: true,
+            xAccountUrl: true,
+            snapchatAccountUrl: true,
+            linkedinAccountUrl: true,
+            licenseNumber: true,
             hasWafi: true,
             acceptsBanks: true,
             description: true,
@@ -173,6 +188,20 @@ export class UserService {
       await this.prisma.developer.update({
         where: { id: userId },
         data: {
+          companyName: details.companyName,
+          entityType: details.entityType,
+          developerCity: details.developerCity,
+          propertyType: details.propertyType,
+          annualProjectCount: details.annualProjectCount,
+          totalNumberOfUnits: details.totalNumberOfUnits,
+          representativeName: details.representativeName,
+          representativePhone: details.representativePhone,
+          representativePosition: details.representativePosition,
+          representativeEmail: details.representativeEmail,
+          websiteUrl: details.websiteUrl,
+          xAccountUrl: details.xAccountUrl,
+          snapchatAccountUrl: details.snapchatAccountUrl,
+          linkedinAccountUrl: details.linkedinAccountUrl,
           licenseNumber: details.licenseNumber,
           hasWafi: details.hasWafi,
           acceptsBanks: details.acceptsBanks,
@@ -184,6 +213,20 @@ export class UserService {
       await this.prisma.developer.create({
         data: {
           id: userId,
+          companyName: details.companyName,
+          entityType: details.entityType,
+          developerCity: details.developerCity,
+          propertyType: details.propertyType,
+          annualProjectCount: details.annualProjectCount,
+          totalNumberOfUnits: details.totalNumberOfUnits,
+          representativeName: details.representativeName,
+          representativePhone: details.representativePhone,
+          representativePosition: details.representativePosition,
+          representativeEmail: details.representativeEmail,
+          websiteUrl: details.websiteUrl,
+          xAccountUrl: details.xAccountUrl,
+          snapchatAccountUrl: details.snapchatAccountUrl,
+          linkedinAccountUrl: details.linkedinAccountUrl,
           licenseNumber: details.licenseNumber,
           hasWafi: details.hasWafi,
           acceptsBanks: details.acceptsBanks,
@@ -317,7 +360,7 @@ export class UserService {
       const oldKey = user.profileImage.split('/').pop();
       if (oldKey) {
         try {
-          await this.s3Service.deleteImage(`users/${oldKey}`);
+          await this.s3Service.deleteMedia(`users/${oldKey}`);
         } catch (error) {
           // Ignore error if file doesn't exist
           console.log('Old profile image not found, skipping deletion');
@@ -326,7 +369,7 @@ export class UserService {
     }
 
     // Upload new image
-    const { url, key } = await this.s3Service.uploadImage(file, 'users');
+    const { url, key } = await this.s3Service.uploadMedia(file, 'users');
 
     // Update user profile image
     const updatedUser = await this.prisma.user.update({
@@ -365,7 +408,7 @@ export class UserService {
     const oldKey = user.profileImage.split('/').pop();
     if (oldKey) {
       try {
-        await this.s3Service.deleteImage(`users/${oldKey}`);
+        await this.s3Service.deleteMedia(`users/${oldKey}`);
       } catch (error) {
         console.log('Profile image not found in S3, continuing with database update');
       }

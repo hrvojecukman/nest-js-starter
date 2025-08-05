@@ -1,6 +1,7 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Post, UseInterceptors, UploadedFiles } from '@nestjs/common';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { RegistrationService } from './registration.service';
-import { InitiateRegistrationDto, RegisterBrokerDto, RegisterOwnerDto } from './dto/registration.dto';
+import { InitiateRegistrationDto, RegisterBrokerDto, RegisterDeveloperDto, RegisterOwnerDto } from './dto/registration.dto';
 
 @Controller('registration')
 export class RegistrationController {
@@ -19,5 +20,17 @@ export class RegistrationController {
   @Post('owner')
   async registerOwner(@Body() dto: RegisterOwnerDto) {
     return this.registrationService.registerOwner(dto);
+  }
+  
+  @Post('developer')
+  @UseInterceptors(FileFieldsInterceptor([
+    { name: 'commercialRegistration', maxCount: 1 },
+    { name: 'taxCertificate', maxCount: 1 },
+    { name: 'valBrokerageLicense', maxCount: 1 },
+    { name: 'realEstateDevelopmentLicense', maxCount: 1 },
+    { name: 'officialCompanyLogo', maxCount: 1 },
+  ]))
+  async registerDeveloper(@Body() dto: RegisterDeveloperDto, @UploadedFiles() files?: { [fieldname: string]: Express.Multer.File[] }) {
+    return this.registrationService.registerDeveloper(dto, files);
   }
 } 

@@ -52,9 +52,23 @@ export class UserDto {
     lastName?: string;
   };
   Developer?: {
+    companyName?: string;
+    entityType?: string;
+    developerCity?: string;
+    propertyType?: string;
+    annualProjectCount?: string;
+    totalNumberOfUnits?: string;
+    representativeName?: string;
+    representativePhone?: string;
+    representativePosition?: string;
+    representativeEmail?: string;
+    websiteUrl?: string;
+    xAccountUrl?: string;
+    snapchatAccountUrl?: string;
+    linkedinAccountUrl?: string;    
     licenseNumber?: string;
-    hasWafi: boolean;
-    acceptsBanks: boolean;
+    hasWafi?: boolean;
+    acceptsBanks?: boolean;
     description?: string;
     location?: string;
   };

@@ -129,7 +129,7 @@ export class PropertyService {
     }
 
     const uploadPromises = files.map(async (file) => {
-      const { url, key } = await this.s3Service.uploadImage(file);
+      const { url, key } = await this.s3Service.uploadMedia(file);
       return this.prisma.media.create({
         data: {
           url,
@@ -152,7 +152,7 @@ export class PropertyService {
       throw new NotFoundException('Media not found');
     }
 
-    await this.s3Service.deleteImage(media.key);
+    await this.s3Service.deleteMedia(media.key);
     await this.prisma.media.delete({ where: { id: mediaId } });
 
     return { message: 'Media deleted successfully' };
@@ -386,7 +386,7 @@ export class PropertyService {
 
     await Promise.all(
       media.map(async (item) => {
-        await this.s3Service.deleteImage(item.key);
+        await this.s3Service.deleteMedia(item.key);
       }),
     );
 

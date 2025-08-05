@@ -62,6 +62,62 @@ export class DeveloperFilterDto extends BaseUserFilterDto {
   @IsOptional()
   @IsBoolean()
   acceptsBanks?: boolean;
+
+  @IsOptional()
+  @IsString()
+  companyName?: string;
+
+  @IsOptional()
+  @IsString()
+  entityType?: string;
+
+  @IsOptional()
+  @IsString()
+  developerCity?: string;
+
+  @IsOptional()
+  @IsString()
+  developerPropertyType?: string;
+
+  @IsOptional()
+  @IsString()
+  annualProjectCount?: string;
+
+  @IsOptional()
+  @IsString()
+  totalNumberOfUnits?: string;
+
+  @IsOptional()
+  @IsString()
+  representativeName?: string;
+
+  @IsOptional()
+  @IsString()
+  representativePhone?: string;
+
+  @IsOptional()
+  @IsString()
+  representativePosition?: string;
+
+  @IsOptional()
+  @IsString()
+  representativeEmail?: string;
+
+  @IsOptional()
+  @IsString()
+  websiteUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  xAccountUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  snapchatAccountUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  linkedinAccountUrl?: string;
 }
 
 // Broker specific filter DTO
@@ -106,6 +162,20 @@ export class UserResponseDto {
   acceptsBanks?: boolean;
   description?: string;
   location?: string;
+  companyName?: string;
+  entityType?: string;
+  developerCity?: string;
+  developerPropertyType?: string;
+  annualProjectCount?: string;
+  totalNumberOfUnits?: string;
+  representativeName?: string;
+  representativePhone?: string;
+  representativePosition?: string;
+  representativeEmail?: string;
+  websiteUrl?: string;
+  xAccountUrl?: string;
+  snapchatAccountUrl?: string;
+  linkedinAccountUrl?: string;
   // Owner fields
   ownerLastName?: string;
   doesOwnProperty?: boolean;

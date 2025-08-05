@@ -64,6 +64,27 @@ const generateUser = (role: Role) => {
         ...baseUser,
         Developer: {
           create: {
+            // Company info
+            companyName: faker.company.name(),
+            entityType: faker.helpers.arrayElement(['company', 'institution']),
+            developerCity: faker.location.city(),
+            propertyType: faker.helpers.arrayElement(Object.values(PropertyType)),
+            annualProjectCount: faker.helpers.arrayElement(['from1To4', 'from5To9', 'moreThan10']),
+            totalNumberOfUnits: faker.helpers.arrayElement(['from1To15', 'from16To30', 'moreThan30']),
+            
+            // Representative info
+            representativeName: faker.person.fullName(),
+            representativePhone: faker.phone.number(),
+            representativePosition: faker.helpers.arrayElement(['CEO', 'Director', 'Manager', 'Owner']),
+            representativeEmail: faker.internet.email(),
+            
+            // Social/Contact
+            websiteUrl: faker.datatype.boolean() ? faker.internet.url() : null,
+            xAccountUrl: faker.datatype.boolean() ? faker.internet.url() : null,
+            snapchatAccountUrl: faker.datatype.boolean() ? faker.internet.url() : null,
+            linkedinAccountUrl: faker.datatype.boolean() ? faker.internet.url() : null,
+            
+            // Existing fields (made optional)
             licenseNumber: faker.datatype.boolean() ? faker.string.alphanumeric(8).toUpperCase() : null,
             hasWafi: faker.datatype.boolean(),
             acceptsBanks: faker.datatype.boolean(),

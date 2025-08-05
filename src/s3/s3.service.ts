@@ -22,7 +22,7 @@ export class S3Service {
     this.bucket = process.env.S3_BUCKET!;
   }
 
-  async uploadImage(
+  async uploadMedia(
     file: Express.Multer.File,
     folder: string = 'properties',
   ): Promise<{ url: string; key: string }> {
@@ -42,7 +42,7 @@ export class S3Service {
     return { url, key };
   }
 
-  async deleteImage(key: string): Promise<void> {
+  async deleteMedia(key: string): Promise<void> {
     const command = new DeleteObjectCommand({
       Bucket: this.bucket,
       Key: key,

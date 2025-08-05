@@ -206,7 +206,7 @@ export class ProjectService {
     }
 
     const uploadPromises = files.map(async (file) => {
-      const { url, key } = await this.s3Service.uploadImage(file, 'projects');
+      const { url, key } = await this.s3Service.uploadMedia(file, 'projects');
       return this.prisma.media.create({
         data: { 
           url, 
@@ -227,7 +227,7 @@ export class ProjectService {
     });
 
     await Promise.all([
-      this.s3Service.deleteImage(media.key),
+      this.s3Service.deleteMedia(media.key),
       this.prisma.media.delete({ where: { id: mediaId } })
     ]);
 
