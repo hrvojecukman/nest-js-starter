@@ -12,6 +12,8 @@ import {
   Max,
   Min,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
+
 import {
   PropertyType,
   PropertyCategory,
@@ -147,16 +149,28 @@ export class PropertyFilterDto {
   search?: string;
 
   @IsOptional()
-  @IsEnum(PropertyType)
-  type?: PropertyType;
+  @Transform(({ value }) => Array.isArray(value) ? value : [value])
+  @IsArray()
+  @IsEnum(PropertyType, { each: true })
+  types?: PropertyType[];
 
   @IsOptional()
-  @IsEnum(PropertyCategory)
-  category?: PropertyCategory;
+  @Transform(({ value }) => Array.isArray(value) ? value : [value])
+  @IsArray()
+  @IsEnum(PropertyCategory, { each: true })
+  categories?: PropertyCategory[];
 
   @IsOptional()
-  @IsEnum(UnitStatus)
-  unitStatus?: UnitStatus;
+  @Transform(({ value }) => Array.isArray(value) ? value : [value])
+  @IsArray()
+  @IsEnum(UnitStatus, { each: true })
+  unitStatuses?: UnitStatus[];
+
+  @IsOptional()
+  @Transform(({ value }) => Array.isArray(value) ? value : [value])
+  @IsArray()
+  @IsString({ each: true })
+  cities?: string[];
 
   @IsOptional()
   @IsEnum(Role)

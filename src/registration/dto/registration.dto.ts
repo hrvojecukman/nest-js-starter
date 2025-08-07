@@ -88,12 +88,6 @@ export class RegisterOwnerDto {
 }
 
 export class RegisterDeveloperDto {
-  @IsString()
-  name: string;
-
-  @IsEmail()
-  email: string;
-
   @Matches(/^\+[1-9]\d{1,14}$/, {
     message: 'Phone number must be in E.164 format (e.g., +14155552671)',
   })

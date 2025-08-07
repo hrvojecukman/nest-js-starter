@@ -18,6 +18,22 @@ const getRandomEnums = <T>(enumObj: { [key: string]: T }, count: number): T[] =>
   return result;
 };
 
+const getRandomSaudiCity = (): string => {
+  const saudiCities = [
+    'Jeddah',
+    'Mecca',
+    'Madina',
+    'Abha',
+    'Tabuk',
+    'Qassim',
+    'Taif',
+    'Madinah',
+    'Riyadh', 
+    'Dammam', 
+  ];
+  return saudiCities[Math.floor(Math.random() * saudiCities.length)];
+};
+
 const generateUser = (role: Role) => {
   const baseUser = {
     email: faker.internet.email(),
@@ -67,7 +83,7 @@ const generateUser = (role: Role) => {
             // Company info
             companyName: faker.company.name(),
             entityType: faker.helpers.arrayElement(['company', 'institution']),
-            developerCity: faker.location.city(),
+            developerCity: getRandomSaudiCity(),
             propertyType: faker.helpers.arrayElement(Object.values(PropertyType)),
             annualProjectCount: faker.helpers.arrayElement(['from1To4', 'from5To9', 'moreThan10']),
             totalNumberOfUnits: faker.helpers.arrayElement(['from1To15', 'from16To30', 'moreThan30']),
@@ -89,7 +105,7 @@ const generateUser = (role: Role) => {
             hasWafi: faker.datatype.boolean(),
             acceptsBanks: faker.datatype.boolean(),
             description: faker.lorem.paragraph(),
-            location: faker.location.city(),
+            location: getRandomSaudiCity(),
           },
         },
       };
@@ -136,7 +152,7 @@ const generateProperty = (ownerId: string, brokerId: string, projectId?: string)
     currency: 'USD',
     downPaymentPercentage: faker.number.int({ min: 10, max: 30 }),
     cashBackPercentage: faker.number.int({ min: 0, max: 10 }),
-    city: faker.location.city(),
+    city: getRandomSaudiCity(),
     address: faker.location.streetAddress(),
     space: faker.number.int({ min: 50, max: 2000 }),
     numberOfLivingRooms: faker.number.int({ min: 0, max: 5 }),
@@ -235,7 +251,7 @@ const generateProject = (developerId: string) => {
   return {
     name: faker.company.name(),
     description: faker.commerce.productDescription(),
-    city: faker.location.city(),
+    city: getRandomSaudiCity(),
     type: getRandomEnum(PropertyType),
     category: getRandomEnum(PropertyCategory),
     infrastructureItems: getRandomEnums(InfrastructureItem, faker.number.int({ min: 2, max: 6 })),

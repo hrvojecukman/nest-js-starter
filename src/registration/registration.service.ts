@@ -165,7 +165,7 @@ export class RegistrationService {
     }
 
     // Check if user already exists
-    await this.checkUserExists(dto.phoneNumber, dto.email);
+    await this.checkUserExists(dto.phoneNumber, dto.representativeEmail);
 
     // Validate that all required documents are provided with correct names
     if (!files) {
@@ -179,8 +179,13 @@ export class RegistrationService {
       throw new BadRequestException('All 5 required documents must be provided: commercialRegistration, taxCertificate, valBrokerageLicense, realEstateDevelopmentLicense, officialCompanyLogo');
     }
 
-    // Validate PDF files
-    const nonPdf = allFiles.find(file => file.mimetype !== 'application/pdf');
+    const nonPdf = allFiles.find(file => {
+      const validPdfMimeTypes = ['application/pdf', 'application/octet-stream'];
+      const hasValidMimeType = validPdfMimeTypes.includes(file.mimetype);
+      const hasPdfExtension = file.originalname.toLowerCase().endsWith('.pdf');
+      return !hasValidMimeType && !hasPdfExtension;
+    });
+
     if (nonPdf) {
       throw new BadRequestException('Only PDF files are allowed for developer documents');
     }
@@ -211,9 +216,9 @@ export class RegistrationService {
       // Create user with developer details
       const newUser = await tx.user.create({
         data: {
-          email: dto.email,
+          email: dto.representativeEmail,
           phoneNumber: dto.phoneNumber,
-          name: dto.name,
+          name: dto.companyName,
           role: Role.DEVELOPER,
           Developer: {
             create: {

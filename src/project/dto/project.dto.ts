@@ -1,7 +1,8 @@
 import { PropertyType, PropertyCategory, InfrastructureItem, MediaType } from '@prisma/client';
 import { PropertyDto } from '../../property/dto/property.dto';
 import { PartialType } from '@nestjs/mapped-types';
-import { IsOptional, IsString, IsEnum, IsNumber, IsLatitude, IsLongitude, Min, Max } from 'class-validator';
+import { IsOptional, IsString, IsEnum, IsNumber, IsLatitude, IsLongitude, Min, Max, IsArray } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class MediaDto {
   url: string;
@@ -116,16 +117,22 @@ export class ProjectFilterDto {
   search?: string;
 
   @IsOptional()
-  @IsEnum(PropertyType)
-  type?: PropertyType;
+  @Transform(({ value }) => Array.isArray(value) ? value : [value])
+  @IsArray()
+  @IsEnum(PropertyType, { each: true })
+  types?: PropertyType[];
 
   @IsOptional()
-  @IsEnum(PropertyCategory)
-  category?: PropertyCategory;
+  @Transform(({ value }) => Array.isArray(value) ? value : [value])
+  @IsArray()
+  @IsEnum(PropertyCategory, { each: true })
+  categories?: PropertyCategory[];
 
   @IsOptional()
-  @IsString()
-  city?: string;
+  @Transform(({ value }) => Array.isArray(value) ? value : [value])
+  @IsArray()
+  @IsString({ each: true })
+  cities?: string[];
 
   @IsOptional()
   @IsString()

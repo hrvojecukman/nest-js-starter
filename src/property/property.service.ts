@@ -182,9 +182,26 @@ export class PropertyService {
       ];
     }
 
-    if (filters.type) where.type = filters.type;
-    if (filters.category) where.category = filters.category;
-    if (filters.unitStatus) where.unitStatus = filters.unitStatus;
+    if (filters.types && filters.types.length > 0) {
+      where.type = { in: filters.types };
+    }
+    if (filters.categories && filters.categories.length > 0) {
+      where.category = { in: filters.categories };
+    }
+    if (filters.unitStatuses && filters.unitStatuses.length > 0) {
+      where.unitStatus = { in: filters.unitStatuses };
+    }
+    if (filters.cities && filters.cities.length > 0) {
+      where.OR = [
+        ...(where.OR || []),
+        ...filters.cities.map(city => ({
+          city: { 
+            mode: 'insensitive' as const,
+            equals: city 
+          }
+        }))
+      ];
+    }
     if (filters.ownerRole) where.owner = { role: filters.ownerRole };
     if (filters.minPrice || filters.maxPrice) {
       where.price = {

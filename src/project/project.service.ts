@@ -259,9 +259,16 @@ export class ProjectService {
           { description: { contains: search, mode: 'insensitive' } }
         ]
       }),
-      ...(filters.type && { type: filters.type }),
-      ...(filters.category && { category: filters.category }),
-      ...(filters.city && { city: filters.city }),
+      ...(filters.types && filters.types.length > 0 && { type: { in: filters.types } }),
+      ...(filters.categories && filters.categories.length > 0 && { category: { in: filters.categories } }),
+      ...(filters.cities && filters.cities.length > 0 && {
+        OR: filters.cities.map(city => ({
+          city: { 
+            mode: 'insensitive' as const,
+            equals: city 
+          }
+        }))
+      }),
       ...(developerId && { developerId })
     };
 
