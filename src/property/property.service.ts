@@ -287,13 +287,18 @@ export class PropertyService {
             }
           },
         },
-        orderBy: filters.sortBy === 'discountPercentage' 
+        orderBy: filters.sortBy === PropertySortField.DISCOUNT_PERCENTAGE
           ? [
-              { discountPercentage: { sort: filters.sortOrder || 'desc', nulls: 'last' } },
-              { createdAt: 'desc' } // Secondary sort for consistent ordering
+              { discountPercentage: { sort: filters.sortOrder || SortOrder.DESC, nulls: 'last' } },
+              { createdAt: SortOrder.DESC } 
+            ]
+          : filters.sortBy === PropertySortField.PRICE
+          ? [
+              { price: filters.sortOrder || SortOrder.DESC },
+              { createdAt: SortOrder.DESC }
             ]
           : {
-              [filters.sortBy || 'createdAt']: filters.sortOrder || 'desc',
+              [filters.sortBy || PropertySortField.CREATED_AT]: filters.sortOrder || SortOrder.DESC,
             },
       }),
       this.prisma.property.count({ where }),
