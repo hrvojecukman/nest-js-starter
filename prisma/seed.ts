@@ -152,6 +152,7 @@ const generateProperty = (ownerId: string, brokerId: string, projectId?: string)
     currency: 'USD',
     downPaymentPercentage: faker.number.int({ min: 10, max: 30 }),
     cashBackPercentage: faker.number.int({ min: 0, max: 10 }),
+    discountPercentage: faker.datatype.boolean() ? faker.number.int({ min: 5, max: 25 }) : null,
     city: getRandomSaudiCity(),
     address: faker.location.streetAddress(),
     space: faker.number.int({ min: 50, max: 2000 }),
@@ -278,13 +279,13 @@ async function main() {
   const config = {
     users: {
       admin: 1,
-      owner: 5,
-      broker: 10,
-      developer: 3,
-      buyer: 20,
+      owner: 10,
+      broker: 20,
+      developer: 10,
+      buyer: 100,
     },
-    propertiesPerOwner: 10,
-    projectsPerDeveloper: 3,
+    propertiesPerOwner: 30,
+    projectsPerDeveloper: 20,
   };
 
   // Create users

@@ -52,6 +52,12 @@ export class CreatePropertyDto {
   @Max(100)
   cashBackPercentage?: number;
 
+  @IsInt()
+  @IsOptional()
+  @Min(0)
+  @Max(100)
+  discountPercentage?: number;
+
   @IsString()
   @IsNotEmpty()
   city: string;
@@ -136,6 +142,7 @@ export enum PropertySortField {
   SPACE = 'space',
   AGE = 'age',
   STREET_WIDTH = 'streetWidth',
+  DISCOUNT_PERCENTAGE = 'discountPercentage',
 }
 
 export enum SortOrder {
@@ -244,6 +251,7 @@ export class PropertyDto {
   currency: string;
   downPaymentPercentage: number;
   cashBackPercentage?: number;
+  discountPercentage?: number;
   city: string;
   address: string;
   space: number;

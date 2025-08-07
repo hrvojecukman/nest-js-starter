@@ -35,6 +35,7 @@ export class PropertyService {
       numberOfWC: property.numberOfWC,
       numberOfFloors: property.numberOfFloors,
       streetWidth: property.streetWidth,
+      discountPercentage: property.discountPercentage,
       thumbnail: property.media[0]?.url,
       ownerName: property.owner.name,
       brokerLicenseNumber: property.owner.Broker?.licenseNumber,
@@ -265,6 +266,7 @@ export class PropertyService {
           numberOfWC: true,
           numberOfFloors: true,
           streetWidth: true,
+          discountPercentage: true,
           media: {
             select: {
               url: true,
@@ -285,9 +287,14 @@ export class PropertyService {
             }
           },
         },
-        orderBy: {
-          [filters.sortBy || 'createdAt']: filters.sortOrder || 'desc',
-        },
+        orderBy: filters.sortBy === 'discountPercentage' 
+          ? [
+              { discountPercentage: { sort: filters.sortOrder || 'desc', nulls: 'last' } },
+              { createdAt: 'desc' } // Secondary sort for consistent ordering
+            ]
+          : {
+              [filters.sortBy || 'createdAt']: filters.sortOrder || 'desc',
+            },
       }),
       this.prisma.property.count({ where }),
     ]);

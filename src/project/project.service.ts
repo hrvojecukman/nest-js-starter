@@ -22,6 +22,7 @@ type PropertyWithRelations = Property & {
   };
   broker: { id: string; phoneNumber: string } | null;
   media: { url: string; type: string }[];
+  discountPercentage: number | null;
 };
 
 type ProjectWithRelations = Project & {
@@ -108,6 +109,7 @@ export class ProjectService {
     ...property,
     price: Number(property.price),
     cashBackPercentage: property.cashBackPercentage ?? undefined,
+    discountPercentage: property.discountPercentage ?? undefined,
     owner: {
       id: property.owner.id,
       name: property.owner.name,

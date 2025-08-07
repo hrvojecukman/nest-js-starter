@@ -141,6 +141,7 @@ model Property {
   currency              String
   downPaymentPercentage Int
   cashBackPercentage    Int?
+  discountPercentage    Int?
   city                  String
   address               String
   space                 Int
