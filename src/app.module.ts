@@ -13,6 +13,7 @@ import { PropertyModule } from './property/property.module';
 import { ProjectModule } from './project/project.module';
 import { S3Module } from './s3/s3.module';
 import { UsersModule } from './users/users.module';
+import { SubscriptionModule } from './subscription/subscription.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { UsersModule } from './users/users.module';
     ProjectModule,
     S3Module,
     UsersModule,
+    SubscriptionModule,
   ],
   controllers: [AppController],
   providers: [AppService],

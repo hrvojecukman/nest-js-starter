@@ -8,24 +8,27 @@ datasource db {
 }
 
 model User {
-  id                 String     @id @default(uuid())
-  email              String?    @unique
-  phoneNumber        String     @unique
+  id                 String        @id @default(uuid())
+  email              String?       @unique
+  phoneNumber        String        @unique
   name               String
   profileImage       String?
-  role               Role       @default(BUYER)
-  createdAt          DateTime   @default(now())
-  updatedAt          DateTime   @updatedAt
+  password           String? // For admin login
+  role               Role          @default(BUYER)
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
   Broker             Broker?
   Buyer              Buyer?
   Developer          Developer?
   Owner              Owner?
   payments           Payment[]
-  projects           Project[]  @relation("DeveloperProjects")
-  brokeredProperties Property[] @relation("BrokerProperties")
-  ownedProperties    Property[] @relation("PropertyOwner")
+  projects           Project[]     @relation("DeveloperProjects")
+  brokeredProperties Property[]    @relation("BrokerProperties")
+  ownedProperties    Property[]    @relation("PropertyOwner")
+  subscription       Subscription?
 
   @@index([phoneNumber])
+  @@index([email])
 }
 
 model Buyer {
@@ -114,6 +117,34 @@ model Payment {
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
   user      User          @relation(fields: [userId], references: [id])
+}
+
+model SubscriptionPlan {
+  id            String         @id @default(uuid())
+  name          String
+  description   String?
+  price         Float
+  currency      String         @default("USD")
+  availableTo   Role[]
+  billingPeriod BillingPeriod
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id                String             @id @default(uuid())
+  userId            String             @unique
+  planId            String
+  startedAt         DateTime           @default(now())
+  expiresAt         DateTime
+  checkoutExpiresAt DateTime? // TTL for pending checkouts
+  autoRenew         Boolean            @default(true)
+  status            SubscriptionStatus
+  paymentProvider   PaymentProvider
+  externalReference String?
+  user              User               @relation(fields: [userId], references: [id])
+  plan              SubscriptionPlan   @relation(fields: [planId], references: [id])
 }
 
 model Media {
@@ -325,4 +356,22 @@ enum TotalNumberOfUnits {
 enum EntityType {
   company
   institution
+}
+
+enum SubscriptionStatus {
+  active
+  expired
+  canceled
+  pending
+}
+
+enum BillingPeriod {
+  monthly
+  yearly
+}
+
+enum PaymentProvider {
+  stripe
+  manual
+  unknown
 }

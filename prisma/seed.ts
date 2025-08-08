@@ -1,5 +1,6 @@
 import { PrismaClient, Role, PropertyType, PropertyCategory, UnitStatus, FacingDirection, MediaType, InfrastructureItem, ProjectTimelineType } from '@prisma/client';
 import { faker } from '@faker-js/faker';
+import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
@@ -305,7 +306,13 @@ async function main() {
 
   // Create admin users
   for (let i = 0; i < config.users.admin; i++) {
-    users.admin.push(await prisma.user.create({ data: generateUser(Role.ADMIN) }));
+    const hashedPassword = await bcrypt.hash('admin123', 12);
+    users.admin.push(await prisma.user.create({ 
+      data: {
+        ...generateUser(Role.ADMIN),
+        password: hashedPassword,
+      }
+    }));
   }
 
   // Create owner users
@@ -368,6 +375,44 @@ async function main() {
     totalProperties++;
   }
 
+  // Create subscription plans
+  await prisma.subscriptionPlan.createMany({
+    data: [
+      {
+        name: 'Broker Plan',
+        description: 'Perfect for individual property owners',
+        price: 100,
+        currency: 'USD',
+        availableTo: ['BROKER'],
+        billingPeriod: 'monthly',
+      },
+      {
+        name: 'Developer Plan',
+        description: 'Perfect for individual property owners',
+        price: 100,
+        currency: 'USD',
+        availableTo: ['DEVELOPER'],
+        billingPeriod: 'monthly',
+      },
+      {
+        name: 'Owner Plan',
+        description: 'Perfect for individual property owners',
+        price: 100,
+        currency: 'USD',
+        availableTo: ['OWNER'],
+        billingPeriod: 'monthly',
+      },
+      {
+        name: 'Buyer Plan',
+        description: 'Perfect for individual property owners',
+        price: 100,
+        currency: 'USD',
+        availableTo: ['BUYER'],
+        billingPeriod: 'monthly',
+      },
+    ],
+  });
+
   console.log('Database has been seeded. 🌱');
   console.log('Created:');
   console.log(`- ${users.admin.length} admin users`);
@@ -378,6 +423,7 @@ async function main() {
   console.log(`- ${totalProperties} properties`);
   console.log(`- ${users.developer.length * config.projectsPerDeveloper} projects`);
   console.log(`- ${users.developer.length * config.projectsPerDeveloper * 4} project timeline items`);
+  console.log('- 5 subscription plans');
 }
 
 main()

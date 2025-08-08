@@ -1,6 +1,6 @@
 import { Body, Controller, Post, UseGuards, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { InitiateLoginDto, VerifyLoginOtpDto, Role } from './dto/auth.dto';
+import { InitiateLoginDto, VerifyLoginOtpDto, AdminLoginDto, AdminRegisterDto, Role } from './dto/auth.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { Request } from 'express';
 
@@ -35,5 +35,15 @@ export class AuthController {
   async refreshToken(@Req() req: Request) {
     const user = req.user as JwtUser;
     return this.authService.refreshToken(user.userId);
+  }
+
+  @Post('admin/login')
+  async adminLogin(@Body() dto: AdminLoginDto) {
+    return this.authService.adminLogin(dto);
+  }
+
+  @Post('admin/register')
+  async adminRegister(@Body() dto: AdminRegisterDto) {
+    return this.authService.adminRegister(dto);
   }
 }

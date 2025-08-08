@@ -1,10 +1,11 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Role } from '@prisma/client';
-import { InitiateLoginDto, VerifyLoginOtpDto } from './dto/auth.dto';
+import { InitiateLoginDto, VerifyLoginOtpDto, AdminLoginDto, AdminRegisterDto } from './dto/auth.dto';
 import { JwtService } from '@nestjs/jwt';
 import { TwilioService } from '../twilio/twilio.service';
 import { UserService } from '../user/user.service';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
@@ -114,5 +115,91 @@ export class AuthService {
     return { success: true };
   }
 
+  async adminLogin(dto: AdminLoginDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
 
+    if (!user || user.role !== Role.ADMIN) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    if (!user.password) {
+      throw new UnauthorizedException('Admin account not properly configured');
+    }
+
+    const isPasswordValid = await bcrypt.compare(dto.password, user.password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const { accessToken, refreshToken } = await this.generateTokens(
+      user.id,
+      user.phoneNumber,
+      user.role,
+    );
+
+    return {
+      accessToken,
+      refreshToken,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    };
+  }
+
+  async adminRegister(dto: AdminRegisterDto) {
+    // Check if admin already exists
+    const existingAdmin = await this.prisma.user.findFirst({
+      where: { role: Role.ADMIN },
+    });
+
+    if (existingAdmin) {
+      throw new ConflictException('Admin account already exists');
+    }
+
+    // Check if email is already taken
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+
+    if (existingUser) {
+      throw new ConflictException('Email already registered');
+    }
+
+    // Hash password
+    const saltRounds = 12;
+    const hashedPassword = await bcrypt.hash(dto.password, saltRounds);
+
+    // Create admin user
+    const adminUser = await this.prisma.user.create({
+      data: {
+        email: dto.email,
+        name: dto.name,
+        phoneNumber: `+1${Math.random().toString().slice(2, 12)}`, // Generate a dummy phone number
+        password: hashedPassword,
+        role: Role.ADMIN,
+      },
+    });
+
+    const { accessToken, refreshToken } = await this.generateTokens(
+      adminUser.id,
+      adminUser.phoneNumber,
+      adminUser.role,
+    );
+
+    return {
+      accessToken,
+      refreshToken,
+      user: {
+        id: adminUser.id,
+        name: adminUser.name,
+        email: adminUser.email,
+        role: adminUser.role,
+      },
+    };
+  }
 }

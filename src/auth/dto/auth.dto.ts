@@ -1,4 +1,4 @@
-import { IsEmail, IsEnum, IsOptional, IsString, IsBoolean, Matches, IsArray, IsNumber, Min } from 'class-validator';
+import { IsEmail, IsEnum, IsOptional, IsString, IsBoolean, Matches, IsArray, IsNumber, Min, MinLength } from 'class-validator';
 import { PropertyType, EntityType, AnnualProjectCount, TotalNumberOfUnits } from '@prisma/client';
 
 export enum Role {
@@ -30,6 +30,28 @@ export class VerifyLoginOtpDto {
   @IsOptional()
   @IsEnum(Role)
   role?: Role;
+}
+
+export class AdminLoginDto {
+  @IsEmail()
+  email: string;
+
+  @IsString()
+  @MinLength(6)
+  password: string;
+}
+
+export class AdminRegisterDto {
+  @IsEmail()
+  email: string;
+
+  @IsString()
+  @MinLength(6)
+  password: string;
+
+  @IsString()
+  @MinLength(2)
+  name: string;
 }
 
 export class UpdateProfileDto {
