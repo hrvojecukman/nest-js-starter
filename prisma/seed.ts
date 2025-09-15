@@ -1,6 +1,7 @@
 import { PrismaClient, Role, PropertyType, PropertyCategory, UnitStatus, FacingDirection, MediaType, InfrastructureItem, ProjectTimelineType } from '@prisma/client';
 import { faker } from '@faker-js/faker';
 import * as bcrypt from 'bcrypt';
+import { tokenAtLevel } from '../src/utils/s2.util';
 
 const prisma = new PrismaClient();
 
@@ -33,6 +34,28 @@ const getRandomSaudiCity = (): string => {
     'Dammam', 
   ];
   return saudiCities[Math.floor(Math.random() * saudiCities.length)];
+};
+
+const getSaudiCoordinates = (city: string): { lat: number; lng: number } => {
+  // Saudi Arabia coordinate bounds
+  const saudiBounds = {
+    lat: { min: 16.0, max: 32.0 },
+    lng: { min: 34.0, max: 55.0 }
+  };
+  
+  // Generate random coordinates within Saudi Arabia
+  const lat = faker.number.float({ 
+    min: saudiBounds.lat.min, 
+    max: saudiBounds.lat.max,
+    fractionDigits: 4 
+  });
+  const lng = faker.number.float({ 
+    min: saudiBounds.lng.min, 
+    max: saudiBounds.lng.max,
+    fractionDigits: 4 
+  });
+  
+  return { lat, lng };
 };
 
 const generateUser = (role: Role) => {
@@ -146,6 +169,9 @@ const generateProperty = (ownerId: string, brokerId: string, projectId?: string)
     name: faker.system.fileName({ extensionCount: 1 }),
   }));
 
+  const city = getRandomSaudiCity();
+  const { lat: locationLat, lng: locationLng } = getSaudiCoordinates(city);
+  
   return {
     title: faker.commerce.productName(),
     description: faker.commerce.productDescription(),
@@ -154,7 +180,7 @@ const generateProperty = (ownerId: string, brokerId: string, projectId?: string)
     downPaymentPercentage: faker.number.int({ min: 10, max: 30 }),
     cashBackPercentage: faker.number.int({ min: 0, max: 10 }),
     discountPercentage: faker.datatype.boolean() ? faker.number.int({ min: 5, max: 25 }) : null,
-    city: getRandomSaudiCity(),
+    city,
     address: faker.location.streetAddress(),
     space: faker.number.int({ min: 50, max: 2000 }),
     numberOfLivingRooms: faker.number.int({ min: 0, max: 5 }),
@@ -169,8 +195,13 @@ const generateProperty = (ownerId: string, brokerId: string, projectId?: string)
     category: getRandomEnum(PropertyCategory),
     unitStatus: getRandomEnum(UnitStatus),
     infrastructureItems: getRandomEnums(InfrastructureItem, faker.number.int({ min: 2, max: 6 })),
-    locationLat: faker.location.latitude(),
-    locationLng: faker.location.longitude(),
+    locationLat,
+    locationLng,
+    s2L6: tokenAtLevel(locationLat, locationLng, 6),
+    s2L8: tokenAtLevel(locationLat, locationLng, 8),
+    s2L10: tokenAtLevel(locationLat, locationLng, 10),
+    s2L12: tokenAtLevel(locationLat, locationLng, 12),
+    s2L16: tokenAtLevel(locationLat, locationLng, 16),
     ownerId,
     brokerId,
     ...(projectId && { projectId }),
@@ -250,15 +281,18 @@ const generateProject = (developerId: string) => {
     }
   ];
 
+  const city = getRandomSaudiCity();
+  const { lat: locationLat, lng: locationLng } = getSaudiCoordinates(city);
+  
   return {
     name: faker.company.name(),
     description: faker.commerce.productDescription(),
-    city: getRandomSaudiCity(),
+    city,
     type: getRandomEnum(PropertyType),
     category: getRandomEnum(PropertyCategory),
     infrastructureItems: getRandomEnums(InfrastructureItem, faker.number.int({ min: 2, max: 6 })),
-    locationLat: faker.location.latitude(),
-    locationLng: faker.location.longitude(),
+    locationLat,
+    locationLng,
     developerId,
     media: {
       create: [...mediaUrls, ...videoUrls, ...documentUrls],

@@ -4,26 +4,26 @@ import {
   CreateSubscriptionPlanDto, 
   UpdateSubscriptionPlanDto, 
   SubscriptionPlanDto,
-  CreateSubscriptionDto,
-  UpdateSubscriptionDto,
   SubscriptionDto,
   SubscriptionPlanFilterDto,
   SubscriptionFilterDto,
-  CheckoutSubscriptionDto,
-  CheckoutResponseDto,
-  WebhookEventDto,
   SubscriptionHistoryDto,
   AdminUpdateSubscriptionDto,
   ExtendSubscriptionDto,
-  AdminCreateSubscriptionDto
+  AdminCreateSubscriptionDto,
+  ActivateSubscriptionDto,
+  SubscriptionActivationResponseDto,
+  RefreshSubscriptionDto,
+  SubscriptionRefreshResponseDto,
+  CreateTransactionDto,
+  TransactionDto,
+  TransactionFilterDto
 } from './dto/subscription.dto';
-import { Role, SubscriptionStatus, BillingPeriod, PaymentProvider } from '@prisma/client';
+import { Role, SubscriptionStatus, BillingPeriod, Platform } from '@prisma/client';
 
 @Injectable()
 export class SubscriptionService {
-  constructor(
-    private prisma: PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   // ==================== SUBSCRIPTION PLANS ====================
 
@@ -108,30 +108,20 @@ export class SubscriptionService {
   }
 
   async updateSubscriptionPlan(id: string, dto: UpdateSubscriptionPlanDto): Promise<SubscriptionPlanDto> {
-    const plan = await this.findSubscriptionPlanById(id);
+    await this.findSubscriptionPlanById(id);
 
     return this.prisma.subscriptionPlan.update({
       where: { id },
-      data: {
-        name: dto.name,
-        description: dto.description,
-        price: dto.price,
-        currency: dto.currency,
-        availableTo: dto.availableTo,
-        billingPeriod: dto.billingPeriod,
-      },
+      data: dto,
     });
   }
 
   async deleteSubscriptionPlan(id: string): Promise<void> {
-    const plan = await this.findSubscriptionPlanById(id);
+    await this.findSubscriptionPlanById(id);
 
     // Check if plan has active subscriptions
     const activeSubscriptions = await this.prisma.subscription.count({
-      where: {
-        planId: id,
-        status: 'active',
-      },
+      where: { planId: id, status: 'active' },
     });
 
     if (activeSubscriptions > 0) {
@@ -146,7 +136,7 @@ export class SubscriptionService {
   // ==================== USER SUBSCRIPTIONS ====================
 
   async getCurrentUserSubscription(userId: string): Promise<SubscriptionDto | null> {
-    return this.prisma.subscription.findUnique({
+    const subscription = await this.prisma.subscription.findUnique({
       where: { userId },
       include: {
         plan: true,
@@ -160,121 +150,8 @@ export class SubscriptionService {
         },
       },
     });
-  }
 
-  async createSubscription(userId: string, dto: CreateSubscriptionDto): Promise<SubscriptionDto> {
-    // Check if user already has an active subscription
-    const existingSubscription = await this.getCurrentUserSubscription(userId);
-    if (existingSubscription && existingSubscription.status === 'active') {
-      throw new BadRequestException('User already has an active subscription');
-    }
-
-    const plan = await this.findSubscriptionPlanById(dto.planId);
-
-    // Calculate expiration date based on billing period
-    const expiresAt = new Date();
-    if (plan.billingPeriod === 'monthly') {
-      expiresAt.setMonth(expiresAt.getMonth() + 1);
-    } else {
-      expiresAt.setFullYear(expiresAt.getFullYear() + 1);
-    }
-
-    // Determine initial status based on payment provider
-    const initialStatus = dto.paymentProvider === 'manual' ? 'active' : 'pending';
-    
-    // Set TTL for pending checkouts (30 minutes)
-    const checkoutExpiresAt = initialStatus === 'pending' 
-      ? new Date(Date.now() + 30 * 60 * 1000) // 30 minutes
-      : null;
-
-    return this.prisma.subscription.create({
-      data: {
-        userId,
-        planId: dto.planId,
-        expiresAt,
-        checkoutExpiresAt,
-        status: initialStatus,
-        paymentProvider: dto.paymentProvider,
-        externalReference: dto.externalReference,
-      },
-      include: {
-        plan: true,
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
-          },
-        },
-      },
-    });
-  }
-
-  async checkoutSubscription(userId: string, dto: CheckoutSubscriptionDto): Promise<CheckoutResponseDto> {
-    const plan = await this.findSubscriptionPlanById(dto.planId);
-
-    // Check if plan is available for user's role
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { role: true },
-    });
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    if (!plan.availableTo.includes(user.role)) {
-      throw new ForbiddenException('This plan is not available for your role');
-    }
-
-    // Check if user already has a subscription
-    const existingSubscription = await this.getCurrentUserSubscription(userId);
-    
-    if (existingSubscription && existingSubscription.status === 'active') {
-      throw new BadRequestException('User already has an active subscription. Please cancel the current subscription before creating a new one.');
-    }
-    
-    // If pending subscription exists, delete it first
-    if (existingSubscription && existingSubscription.status === 'pending') {
-      await this.prisma.subscription.delete({
-        where: { id: existingSubscription.id }
-      });
-    }
-
-    // Create new subscription
-    const subscription = await this.createSubscription(userId, {
-      planId: dto.planId,
-      paymentProvider: dto.paymentProvider,
-    });
-
-    // Create checkout session based on payment provider
-    let checkoutUrl: string;
-    let sessionId: string;
-
-    switch (dto.paymentProvider) {
-      case 'stripe':
-        // For Stripe payments, return a mock checkout URL
-        checkoutUrl = `https://checkout.stripe.com/pay/cs_test_${subscription.id}`;
-        sessionId = `cs_test_${subscription.id}`;
-        break;
-
-      case 'manual':
-        // For manual payments, return a special URL
-        checkoutUrl = `/subscription/manual-payment/${subscription.id}`;
-        sessionId = subscription.id;
-        break;
-
-      default:
-        throw new BadRequestException('Invalid payment provider');
-    }
-
-    return {
-      subscriptionId: subscription.id,
-      checkoutUrl,
-      sessionId,
-      expiresAt: subscription.expiresAt,
-    };
+    return subscription;
   }
 
   async cancelSubscription(userId: string): Promise<SubscriptionDto> {
@@ -308,50 +185,13 @@ export class SubscriptionService {
     });
   }
 
-  async renewSubscription(userId: string): Promise<SubscriptionDto> {
-    const subscription = await this.getCurrentUserSubscription(userId);
-    
-    if (!subscription) {
-      throw new NotFoundException('No subscription found');
-    }
-
-    if (subscription.status === 'active') {
-      throw new BadRequestException('Subscription is already active');
-    }
-
-    // Calculate new expiration date
-    const newExpiresAt = new Date();
-    if (subscription.plan.billingPeriod === 'monthly') {
-      newExpiresAt.setMonth(newExpiresAt.getMonth() + 1);
-    } else {
-      newExpiresAt.setFullYear(newExpiresAt.getFullYear() + 1);
-    }
-
-    return this.prisma.subscription.update({
+  async getSubscriptionHistory(userId: string): Promise<SubscriptionHistoryDto[]> {
+    const subscription = await this.prisma.subscription.findUnique({
       where: { userId },
-      data: {
-        status: 'pending',
-        expiresAt: newExpiresAt,
-        autoRenew: true,
-      },
       include: {
         plan: true,
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
-          },
-        },
       },
     });
-  }
-
-  async getSubscriptionHistory(userId: string): Promise<SubscriptionHistoryDto[]> {
-    // This would typically query a separate history table
-    // For now, we'll return the current subscription if it exists
-    const subscription = await this.getCurrentUserSubscription(userId);
     
     if (!subscription) {
       return [];
@@ -363,94 +203,10 @@ export class SubscriptionService {
       status: subscription.status,
       startedAt: subscription.startedAt,
       expiresAt: subscription.expiresAt,
-      paymentProvider: subscription.paymentProvider,
+      platform: subscription.platform,
       price: subscription.plan.price,
       currency: subscription.plan.currency,
     }];
-  }
-
-  // ==================== WEBHOOK HANDLING ====================
-
-  async handleWebhook(event: WebhookEventDto): Promise<void> {
-    switch (event.type) {
-      case 'checkout.session.completed':
-        await this.handleCheckoutCompleted(event.data);
-        break;
-      
-      case 'invoice.payment_succeeded':
-        await this.handlePaymentSucceeded(event.data);
-        break;
-      
-      case 'invoice.payment_failed':
-        await this.handlePaymentFailed(event.data);
-        break;
-      
-      case 'customer.subscription.deleted':
-        await this.handleSubscriptionDeleted(event.data);
-        break;
-      
-      default:
-        // Log unhandled event types
-        console.log(`Unhandled webhook event: ${event.type}`);
-    }
-  }
-
-  private async handleCheckoutCompleted(data: any): Promise<void> {
-    const subscriptionId = data.object.metadata?.subscriptionId;
-    
-    if (!subscriptionId) {
-      console.warn('No subscription ID in webhook metadata');
-      return;
-    }
-
-    try {
-      // Try to update existing subscription
-      await this.prisma.subscription.update({
-        where: { id: subscriptionId },
-        data: {
-          status: 'active',
-          externalReference: data.object.id,
-          checkoutExpiresAt: null, // Clear TTL
-        },
-      });
-      console.log(`Subscription ${subscriptionId} activated successfully`);
-    } catch (error) {
-      // Subscription might have been cleaned up, create new one
-      if (error.code === 'P2025') { // Record not found
-        console.log(`Subscription ${subscriptionId} not found, creating new one`);
-        await this.prisma.subscription.create({
-          data: {
-            id: subscriptionId,
-            userId: data.object.metadata?.userId,
-            planId: data.object.metadata?.planId,
-            status: 'active',
-            externalReference: data.object.id,
-            expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days default
-            autoRenew: true,
-            paymentProvider: 'stripe',
-          }
-        });
-        console.log(`New subscription ${subscriptionId} created from webhook`);
-      } else {
-        console.error('Error handling checkout completed:', error);
-        throw error;
-      }
-    }
-  }
-
-  private async handlePaymentSucceeded(data: any): Promise<void> {
-    // Handle successful recurring payments
-    console.log('Payment succeeded:', data);
-  }
-
-  private async handlePaymentFailed(data: any): Promise<void> {
-    // Handle failed payments
-    console.log('Payment failed:', data);
-  }
-
-  private async handleSubscriptionDeleted(data: any): Promise<void> {
-    // Handle subscription cancellation
-    console.log('Subscription deleted:', data);
   }
 
   // ==================== ADMIN METHODS ====================
@@ -476,8 +232,8 @@ export class SubscriptionService {
       where.status = filters.status;
     }
 
-    if (filters.paymentProvider) {
-      where.paymentProvider = filters.paymentProvider;
+    if (filters.platform) {
+      where.platform = filters.platform;
     }
 
     if (filters.userRole) {
@@ -561,15 +317,11 @@ export class SubscriptionService {
   }
 
   async updateSubscriptionStatus(id: string, dto: AdminUpdateSubscriptionDto): Promise<SubscriptionDto> {
-    const subscription = await this.findSubscriptionById(id);
+    await this.findSubscriptionById(id);
 
     return this.prisma.subscription.update({
       where: { id },
-      data: {
-        status: dto.status,
-        expiresAt: dto.expiresAt ? new Date(dto.expiresAt) : undefined,
-        autoRenew: dto.autoRenew,
-      },
+      data: dto,
       include: {
         plan: true,
         user: {
@@ -594,6 +346,7 @@ export class SubscriptionService {
       where: { id },
       data: {
         expiresAt: newExpiresAt,
+        status: 'active',
       },
       include: {
         plan: true,
@@ -610,60 +363,50 @@ export class SubscriptionService {
   }
 
   async createSubscriptionByAdmin(dto: AdminCreateSubscriptionDto): Promise<SubscriptionDto> {
-    // Check if user exists
+    // Validate plan exists
+    const plan = await this.findSubscriptionPlanById(dto.planId);
+    
+    // Validate user exists
     const user = await this.prisma.user.findUnique({
       where: { id: dto.userId },
+      select: { role: true },
     });
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    // Check if plan exists
-    const plan = await this.prisma.subscriptionPlan.findUnique({
-      where: { id: dto.planId },
-    });
-
-    if (!plan) {
-      throw new NotFoundException('Subscription plan not found');
+    // Check if plan is available for user's role
+    if (!plan.availableTo.includes(user.role)) {
+      throw new ForbiddenException('This plan is not available for the specified user role');
     }
 
-    // Check if user already has an active subscription
-    const existingSubscription = await this.prisma.subscription.findUnique({
-      where: { userId: dto.userId },
-    });
-
+    // Check if user already has a subscription
+    const existingSubscription = await this.getCurrentUserSubscription(dto.userId);
     if (existingSubscription) {
       throw new BadRequestException('User already has a subscription');
     }
 
-    // Calculate dates
+    // Calculate expiration date
     const startedAt = dto.startedAt ? new Date(dto.startedAt) : new Date();
     const expiresAt = dto.expiresAt ? new Date(dto.expiresAt) : this.calculateExpirationDate(startedAt, plan.billingPeriod);
 
-    return this.prisma.subscription.create({
+    // Create subscription
+    const subscription = await this.prisma.subscription.create({
       data: {
         userId: dto.userId,
         planId: dto.planId,
+        status: dto.status || 'active',
+        platform: dto.platform,
+        externalId: dto.externalId,
         startedAt,
         expiresAt,
         autoRenew: dto.autoRenew ?? true,
-        status: dto.status ?? 'active',
-        paymentProvider: dto.paymentProvider,
-        externalReference: dto.externalReference,
-      },
-      include: {
-        plan: true,
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
-          },
-        },
       },
     });
+
+    // Return with plan and user data
+    return this.findSubscriptionById(subscription.id);
   }
 
   // ==================== UTILITY METHODS ====================
@@ -680,14 +423,12 @@ export class SubscriptionService {
     }
 
     const now = new Date();
-    const daysUntilExpiry = Math.ceil(
-      (subscription.expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
-    );
+    const daysUntilExpiry = Math.ceil((subscription.expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
     return {
       hasActiveSubscription: true,
       subscription,
-      daysUntilExpiry: Math.max(0, daysUntilExpiry),
+      daysUntilExpiry: daysUntilExpiry > 0 ? daysUntilExpiry : 0,
     };
   }
 
@@ -707,29 +448,6 @@ export class SubscriptionService {
     }
   }
 
-  async cleanupExpiredCheckouts(): Promise<{ deletedCount: number }> {
-    const expiredCheckouts = await this.prisma.subscription.findMany({
-      where: {
-        status: 'pending',
-        checkoutExpiresAt: { lt: new Date() },
-      },
-      select: { id: true },
-    });
-
-    if (expiredCheckouts.length > 0) {
-      const deletedCount = await this.prisma.subscription.deleteMany({
-        where: {
-          id: { in: expiredCheckouts.map(s => s.id) },
-        },
-      });
-      
-      console.log(`Cleaned up ${deletedCount.count} expired checkouts`);
-      return { deletedCount: deletedCount.count };
-    }
-
-    return { deletedCount: 0 };
-  }
-
   private calculateExpirationDate(startedAt: Date, billingPeriod: BillingPeriod): Date {
     const expirationDate = new Date(startedAt);
     
@@ -746,4 +464,183 @@ export class SubscriptionService {
     
     return expirationDate;
   }
-} 
+
+  // ==================== MOBILE-FIRST METHODS ====================
+
+  async activateSubscription(userId: string, dto: ActivateSubscriptionDto): Promise<SubscriptionActivationResponseDto> {
+    // Check if user already has an active subscription
+    const existingSubscription = await this.getCurrentUserSubscription(userId);
+    if (existingSubscription && existingSubscription.status === 'active') {
+      throw new BadRequestException('User already has an active subscription');
+    }
+
+    // Validate plan exists and is available for user's role
+    const plan = await this.findSubscriptionPlanById(dto.planId);
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (!plan.availableTo.includes(user.role)) {
+      throw new ForbiddenException('This plan is not available for your role');
+    }
+
+    // Create metadata with platform-specific details
+    const metadata = {
+      platform: dto.platform,
+      receiptData: dto.receiptData,
+      transactionId: dto.transactionId,
+      originalTransactionId: dto.originalTransactionId,
+      productId: dto.productId || dto.planId,
+      purchaseToken: dto.purchaseToken,
+      bundleId: dto.bundleId,
+      purchaseTime: dto.purchaseTime,
+      expiresTime: dto.expiresTime,
+    };
+
+    // Calculate expiration date
+    const startedAt = new Date();
+    const expiresAt = this.calculateExpirationDate(startedAt, plan.billingPeriod);
+
+    // Create subscription
+    const subscription = await this.prisma.subscription.create({
+      data: {
+        userId,
+        planId: dto.planId,
+        status: 'active',
+        platform: dto.platform,
+        externalId: dto.transactionId,
+        metadata,
+        startedAt,
+        expiresAt,
+        autoRenew: true,
+      },
+    });
+
+    // Create transaction record
+    await this.createTransaction({
+      userId,
+      type: 'subscription_start',
+      amount: plan.price,
+      currency: plan.currency,
+      status: 'completed',
+      externalId: dto.transactionId,
+      metadata,
+      subscriptionId: subscription.id,
+      planId: dto.planId,
+    });
+
+    return {
+      subscriptionId: subscription.id,
+      status: subscription.status,
+      expiresAt: subscription.expiresAt,
+      platform: dto.platform,
+      externalId: dto.transactionId || undefined,
+    };
+  }
+
+  async refreshSubscription(dto: RefreshSubscriptionDto): Promise<SubscriptionRefreshResponseDto> {
+    const subscription = await this.prisma.subscription.findUnique({
+      where: { id: dto.subscriptionId },
+      include: { plan: true },
+    });
+
+    if (!subscription) {
+      return {
+        subscriptionId: dto.subscriptionId,
+        isValid: false,
+        status: 'expired',
+        error: 'Subscription not found',
+      };
+    }
+
+    // For now, return basic validation
+    // In production, you would validate with platform-specific APIs
+    const isValid = subscription.status === 'active' && subscription.expiresAt > new Date();
+
+    return {
+      subscriptionId: dto.subscriptionId,
+      isValid,
+      status: subscription.status,
+      expiresAt: subscription.expiresAt,
+      error: isValid ? undefined : 'Subscription is not valid or has expired',
+    };
+  }
+
+  // ==================== TRANSACTIONS ====================
+
+  async createTransaction(dto: CreateTransactionDto): Promise<TransactionDto> {
+    return this.prisma.transaction.create({
+      data: {
+        userId: dto.userId,
+        type: dto.type,
+        amount: dto.amount,
+        currency: dto.currency,
+        status: 'completed', // Default to completed for now
+        externalId: dto.externalId,
+        metadata: dto.metadata,
+        subscriptionId: dto.subscriptionId,
+        planId: dto.planId,
+      },
+    });
+  }
+
+  async findAllTransactions(filters: TransactionFilterDto): Promise<{
+    transactions: TransactionDto[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const where: any = {};
+
+    if (filters.type) {
+      where.type = filters.type;
+    }
+
+    if (filters.status) {
+      where.status = filters.status;
+    }
+
+    if (filters.userId) {
+      where.userId = filters.userId;
+    }
+
+    if (filters.subscriptionId) {
+      where.subscriptionId = filters.subscriptionId;
+    }
+
+    if (filters.createdAfter) {
+      where.createdAt = { gte: new Date(filters.createdAfter) };
+    }
+
+    if (filters.createdBefore) {
+      where.createdAt = { ...where.createdAt, lte: new Date(filters.createdBefore) };
+    }
+
+    const page = filters.page || 1;
+    const limit = filters.limit || 10;
+
+    const [transactions, total] = await Promise.all([
+      this.prisma.transaction.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.transaction.count({ where }),
+    ]);
+
+    return {
+      transactions,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+}

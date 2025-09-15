@@ -1,22 +1,9 @@
-import { 
-  IsString, 
-  IsNumber, 
-  IsOptional, 
-  IsEnum, 
-  IsArray, 
-  IsBoolean, 
-  IsDateString,
-  IsUUID,
-  Min,
-  Max,
-  ValidateNested,
-  IsNotEmpty,
-  IsObject
-} from 'class-validator';
-import { Transform, Type } from 'class-transformer';
-import { Role, SubscriptionStatus, BillingPeriod, PaymentProvider } from '@prisma/client';
+import { IsString, IsEmail, IsOptional, IsBoolean, IsEnum, IsArray, IsNumber, Min, Max, IsNotEmpty, ValidateNested, IsUUID, IsDateString, IsObject } from 'class-validator';
+import { Type } from 'class-transformer';
+import { Role, SubscriptionStatus, BillingPeriod, Platform, TransactionType, TransactionStatus } from '@prisma/client';
 
-// Subscription Plan DTOs
+// ==================== SUBSCRIPTION PLANS ====================
+
 export class CreateSubscriptionPlanDto {
   @IsString()
   @IsNotEmpty()
@@ -82,32 +69,7 @@ export class SubscriptionPlanDto {
   updatedAt: Date;
 }
 
-// Subscription DTOs
-export class CreateSubscriptionDto {
-  @IsUUID()
-  planId: string;
-
-  @IsEnum(PaymentProvider)
-  paymentProvider: PaymentProvider;
-
-  @IsString()
-  @IsOptional()
-  externalReference?: string;
-}
-
-export class UpdateSubscriptionDto {
-  @IsEnum(SubscriptionStatus)
-  @IsOptional()
-  status?: SubscriptionStatus;
-
-  @IsBoolean()
-  @IsOptional()
-  autoRenew?: boolean;
-
-  @IsDateString()
-  @IsOptional()
-  expiresAt?: string;
-}
+// ==================== SUBSCRIPTIONS ====================
 
 export class SubscriptionDto {
   id: string;
@@ -117,8 +79,8 @@ export class SubscriptionDto {
   expiresAt: Date;
   autoRenew: boolean;
   status: SubscriptionStatus;
-  paymentProvider: PaymentProvider;
-  externalReference: string | null;
+  externalId: string | null;
+  metadata: any;
   plan: SubscriptionPlanDto;
   user: {
     id: string;
@@ -128,7 +90,60 @@ export class SubscriptionDto {
   };
 }
 
-// Filter DTOs
+// ==================== TRANSACTIONS ====================
+
+export class CreateTransactionDto {
+  @IsUUID()
+  userId: string;
+
+  @IsEnum(TransactionType)
+  type: TransactionType;
+
+  @IsNumber()
+  @Min(0)
+  amount: number;
+
+  @IsString()
+  @IsOptional()
+  currency?: string = 'USD';
+
+  @IsEnum(TransactionStatus)
+  @IsOptional()
+  status?: TransactionStatus = 'completed';
+
+  @IsString()
+  @IsOptional()
+  externalId?: string;
+
+  @IsObject()
+  @IsOptional()
+  metadata?: any;
+
+  @IsUUID()
+  @IsOptional()
+  subscriptionId?: string;
+
+  @IsUUID()
+  @IsOptional()
+  planId?: string;
+}
+
+export class TransactionDto {
+  id: string;
+  userId: string;
+  type: TransactionType;
+  amount: number;
+  currency: string;
+  status: TransactionStatus;
+  externalId: string | null;
+  metadata: any;
+  createdAt: Date;
+  subscriptionId: string | null;
+  planId: string | null;
+}
+
+// ==================== FILTERS ====================
+
 export class SubscriptionPlanFilterDto {
   @IsOptional()
   @IsString()
@@ -164,8 +179,8 @@ export class SubscriptionFilterDto {
   status?: SubscriptionStatus;
 
   @IsOptional()
-  @IsEnum(PaymentProvider)
-  paymentProvider?: PaymentProvider;
+  @IsEnum(Platform)
+  platform?: Platform;
 
   @IsOptional()
   @IsEnum(Role)
@@ -203,69 +218,49 @@ export class SubscriptionFilterDto {
   limit?: number = 10;
 }
 
-// Checkout DTOs
-export class CheckoutSubscriptionDto {
+export class TransactionFilterDto {
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @IsOptional()
+  @IsEnum(TransactionType)
+  type?: TransactionType;
+
+  @IsOptional()
+  @IsEnum(TransactionStatus)
+  status?: TransactionStatus;
+
+  @IsOptional()
   @IsUUID()
-  planId: string;
+  userId?: string;
 
-  @IsEnum(PaymentProvider)
-  paymentProvider: PaymentProvider;
-
-  @IsString()
   @IsOptional()
-  successUrl?: string;
+  @IsUUID()
+  subscriptionId?: string;
 
-  @IsString()
   @IsOptional()
-  cancelUrl?: string;
+  @IsDateString()
+  createdAfter?: string;
+
+  @IsOptional()
+  @IsDateString()
+  createdBefore?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  page?: number = 1;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(100)
+  limit?: number = 10;
 }
 
-export class CheckoutResponseDto {
-  subscriptionId: string;
-  checkoutUrl: string;
-  sessionId: string;
-  expiresAt: Date;
-}
+// ==================== ADMIN DTOs ====================
 
-// Webhook DTOs
-export class WebhookDataDto {
-  object?: any;
-
-  @IsString()
-  @IsOptional()
-  id?: string;
-
-  @IsString()
-  @IsOptional()
-  status?: string;
-}
-
-export class WebhookEventDto {
-  @IsString()
-  type: string;
-
-  @IsString()
-  @IsOptional()
-  id?: string;
-
-  @ValidateNested()
-  @Type(() => WebhookDataDto)
-  data: WebhookDataDto;
-}
-
-// Response DTOs
-export class SubscriptionHistoryDto {
-  id: string;
-  planName: string;
-  status: SubscriptionStatus;
-  startedAt: Date;
-  expiresAt: Date;
-  paymentProvider: PaymentProvider;
-  price: number;
-  currency: string;
-}
-
-// Admin DTOs
 export class AdminUpdateSubscriptionDto {
   @IsEnum(SubscriptionStatus)
   status: SubscriptionStatus;
@@ -293,8 +288,8 @@ export class AdminCreateSubscriptionDto {
   @IsUUID()
   planId: string;
 
-  @IsEnum(PaymentProvider)
-  paymentProvider: PaymentProvider;
+  @IsEnum(Platform)
+  platform: Platform;
 
   @IsDateString()
   @IsOptional()
@@ -314,5 +309,84 @@ export class AdminCreateSubscriptionDto {
 
   @IsString()
   @IsOptional()
-  externalReference?: string;
-} 
+  externalId?: string;
+}
+
+// ==================== MOBILE-FIRST DTOs ====================
+
+export class ActivateSubscriptionDto {
+  @IsEnum(Platform)
+  platform: Platform;
+
+  @IsString()
+  @IsNotEmpty()
+  receiptData: string; // Base64 encoded receipt
+
+  @IsUUID()
+  planId: string;
+
+  @IsString()
+  @IsOptional()
+  transactionId?: string;
+
+  @IsString()
+  @IsOptional()
+  originalTransactionId?: string;
+
+  @IsString()
+  @IsOptional()
+  productId?: string;
+
+  @IsString()
+  @IsOptional()
+  purchaseToken?: string; // Android specific
+
+  @IsString()
+  @IsOptional()
+  bundleId?: string; // iOS specific
+
+  @IsNumber()
+  @IsOptional()
+  purchaseTime?: number;
+
+  @IsNumber()
+  @IsOptional()
+  expiresTime?: number;
+}
+
+export class SubscriptionActivationResponseDto {
+  subscriptionId: string;
+  status: SubscriptionStatus;
+  expiresAt: Date;
+  platform: Platform;
+  externalId?: string;
+}
+
+export class RefreshSubscriptionDto {
+  @IsUUID()
+  subscriptionId: string;
+
+  @IsEnum(Platform)
+  platform: Platform;
+}
+
+export class SubscriptionRefreshResponseDto {
+  subscriptionId: string;
+  isValid: boolean;
+  status: SubscriptionStatus;
+  expiresAt?: Date;
+  error?: string;
+}
+
+// ==================== RESPONSE DTOs ====================
+
+export class SubscriptionHistoryDto {
+  id: string;
+  planName: string;
+  status: SubscriptionStatus;
+  startedAt: Date;
+  expiresAt: Date;
+  platform: Platform;
+  price: number;
+  currency: string;
+}

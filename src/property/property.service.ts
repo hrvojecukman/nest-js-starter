@@ -5,6 +5,7 @@ import { Prisma, MediaType } from '@prisma/client';
 import { S3Service } from '../s3/s3.service';
 import { calculateBoundingBox, calculateDistance, kmToDegrees } from '../utils/location.utils';
 import { PropertySortField, SortOrder } from './dto/property.dto';
+import { tokenAtLevel } from '../utils/s2.util';
 
 @Injectable()
 export class PropertyService {
@@ -60,9 +61,21 @@ export class PropertyService {
       throw new BadRequestException('Only owners, developers and brokers can create properties');
     }
 
+    // Generate S2 tokens for location
+    const s2L6 = tokenAtLevel(propertyData.locationLat, propertyData.locationLng, 6);
+    const s2L8 = tokenAtLevel(propertyData.locationLat, propertyData.locationLng, 8);
+    const s2L10 = tokenAtLevel(propertyData.locationLat, propertyData.locationLng, 10);
+    const s2L12 = tokenAtLevel(propertyData.locationLat, propertyData.locationLng, 12);
+    const s2L16 = tokenAtLevel(propertyData.locationLat, propertyData.locationLng, 16);
+
     const property = await this.prisma.property.create({
       data: {
         ...propertyData,
+        s2L6,
+        s2L8,
+        s2L10,
+        s2L12,
+        s2L16,
         owner: {
           connect: { id: ownerId }
         },
@@ -394,9 +407,24 @@ export class PropertyService {
   async update(id: string, updatePropertyDto: Partial<CreatePropertyDto>) {
     const property = await this.findOne(id);
 
+    // Check if location is being updated to regenerate S2 tokens
+    const needsS2 =
+      updatePropertyDto.locationLat !== undefined &&
+      updatePropertyDto.locationLng !== undefined;
+
+    const updateData: any = { ...updatePropertyDto };
+    
+    if (needsS2) {
+      updateData.s2L6 = tokenAtLevel(updatePropertyDto.locationLat!, updatePropertyDto.locationLng!, 6);
+      updateData.s2L8 = tokenAtLevel(updatePropertyDto.locationLat!, updatePropertyDto.locationLng!, 8);
+      updateData.s2L10 = tokenAtLevel(updatePropertyDto.locationLat!, updatePropertyDto.locationLng!, 10);
+      updateData.s2L12 = tokenAtLevel(updatePropertyDto.locationLat!, updatePropertyDto.locationLng!, 12);
+      updateData.s2L16 = tokenAtLevel(updatePropertyDto.locationLat!, updatePropertyDto.locationLng!, 16);
+    }
+
     return this.prisma.property.update({
       where: { id },
-      data: updatePropertyDto,
+      data: updateData,
       include: {
         owner: true,
         broker: true,
@@ -445,9 +473,21 @@ export class PropertyService {
         createPropertyDtos.map(async (dto) => {
           const { brokerId, projectId, ...propertyData } = dto;
           
+          // Generate S2 tokens for location
+          const s2L6 = tokenAtLevel(propertyData.locationLat, propertyData.locationLng, 6);
+          const s2L8 = tokenAtLevel(propertyData.locationLat, propertyData.locationLng, 8);
+          const s2L10 = tokenAtLevel(propertyData.locationLat, propertyData.locationLng, 10);
+          const s2L12 = tokenAtLevel(propertyData.locationLat, propertyData.locationLng, 12);
+          const s2L16 = tokenAtLevel(propertyData.locationLat, propertyData.locationLng, 16);
+
           const property = await prisma.property.create({
             data: {
               ...propertyData,
+              s2L6,
+              s2L8,
+              s2L10,
+              s2L12,
+              s2L16,
               owner: {
                 connect: { id: ownerId }
               },

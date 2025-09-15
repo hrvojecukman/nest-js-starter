@@ -8,7 +8,10 @@ async function bootstrap() {
   // Enable CORS
   app.enableCors({
     origin: [
-      'http://localhost:3000',     
+      'http://localhost:3000',
+      'http://192.168.100.4:3000',
+      'http://192.168.100.4:3001', // In case you run frontend on different port
+      'http://192.168.1.115:3002',
       // 'https://yourdomain.com',
     ],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
@@ -35,6 +38,14 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api/v1');
 
-  await app.listen(3000);
+  // Bind to specific IP address for network access
+  const host = '192.168.100.4';
+  // const host = '192.168.1.115'
+  const port = 3000;
+  
+  await app.listen(port, host);
+  console.log(`🚀 Server running on http://${host}:${port}`);
+  console.log(`🌐 Server accessible from network on ${host}:${port}`);
+  console.log(`📱 API available at http://${host}:${port}/api/v1`);
 }
 bootstrap();

@@ -26,6 +26,7 @@ model User {
   brokeredProperties Property[]    @relation("BrokerProperties")
   ownedProperties    Property[]    @relation("PropertyOwner")
   subscription       Subscription?
+  transactions       Transaction[]
 
   @@index([phoneNumber])
   @@index([email])
@@ -130,21 +131,41 @@ model SubscriptionPlan {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   subscriptions Subscription[]
+  transactions  Transaction[]
 }
 
 model Subscription {
-  id                String             @id @default(uuid())
-  userId            String             @unique
-  planId            String
-  startedAt         DateTime           @default(now())
-  expiresAt         DateTime
-  checkoutExpiresAt DateTime? // TTL for pending checkouts
-  autoRenew         Boolean            @default(true)
-  status            SubscriptionStatus
-  paymentProvider   PaymentProvider
-  externalReference String?
-  user              User               @relation(fields: [userId], references: [id])
-  plan              SubscriptionPlan   @relation(fields: [planId], references: [id])
+  id           String             @id @default(uuid())
+  userId       String             @unique
+  planId       String
+  startedAt    DateTime           @default(now())
+  expiresAt    DateTime
+  autoRenew    Boolean            @default(true)
+  status       SubscriptionStatus
+  platform     Platform           @default(manual)
+  // Simple, abstract fields
+  externalId   String? // Any external reference (platform-agnostic)
+  metadata     Json? // Flexible storage for platform-specific data
+  user         User               @relation(fields: [userId], references: [id])
+  plan         SubscriptionPlan   @relation(fields: [planId], references: [id])
+  transactions Transaction[] // One-to-many relationship
+}
+
+model Transaction {
+  id             String            @id @default(uuid())
+  userId         String
+  type           TransactionType // subscription, purchase, refund, etc.
+  amount         Float
+  currency       String            @default("USD")
+  status         TransactionStatus
+  externalId     String? // Platform transaction ID
+  metadata       Json? // Platform-specific data
+  createdAt      DateTime          @default(now())
+  user           User              @relation(fields: [userId], references: [id])
+  subscription   Subscription?     @relation(fields: [subscriptionId], references: [id])
+  subscriptionId String?
+  plan           SubscriptionPlan? @relation(fields: [planId], references: [id])
+  planId         String?
 }
 
 model Media {
@@ -190,6 +211,11 @@ model Property {
   infrastructureItems   InfrastructureItem[]
   locationLat           Float
   locationLng           Float
+  s2L6                  String               @db.VarChar(32)
+  s2L8                  String               @db.VarChar(32)
+  s2L10                 String               @db.VarChar(32)
+  s2L12                 String               @db.VarChar(32)
+  s2L16                 String               @db.VarChar(32)
   createdAt             DateTime             @default(now())
   updatedAt             DateTime             @updatedAt
   ownerId               String
@@ -201,6 +227,11 @@ model Property {
   project               Project?             @relation(fields: [projectId], references: [id])
 
   @@index([locationLat, locationLng])
+  @@index([s2L6])
+  @@index([s2L8])
+  @@index([s2L10])
+  @@index([s2L12])
+  @@index([s2L16])
 }
 
 model NearbyPlace {
@@ -374,4 +405,27 @@ enum PaymentProvider {
   stripe
   manual
   unknown
+}
+
+enum Platform {
+  ios
+  android
+  web
+  manual
+}
+
+enum TransactionType {
+  subscription_start
+  subscription_renewal
+  subscription_cancellation
+  one_time_purchase
+  refund
+  credit
+}
+
+enum TransactionStatus {
+  pending
+  completed
+  failed
+  refunded
 }
