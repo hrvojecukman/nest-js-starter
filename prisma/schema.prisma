@@ -28,6 +28,7 @@ model User {
   subscription       Subscription?
   transactions       Transaction[]
   notifications      NotificationRecipient[]
+  devices            UserDevice[]
 
   @@index([phoneNumber])
   @@index([email])
@@ -458,4 +459,17 @@ model NotificationRecipient {
   @@unique([notificationId, userId])
   @@index([userId, readAt])
   @@index([userId, isArchived])
+}
+
+model UserDevice {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  platform  Platform @default(manual)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
 }

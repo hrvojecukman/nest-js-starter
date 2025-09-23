@@ -1,10 +1,11 @@
-import { Injectable } from '@nestjs/common';
-import { Prisma, PrismaClient } from '@prisma/client';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { PushService } from '../push/push.service';
 
 @Injectable()
 export class NotificationsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private push: PushService) {}
 
   async list(userId: string, dto: any) {
     const page = Number(dto.page ?? 1);
@@ -77,6 +78,18 @@ export class NotificationsService {
 
   async createDirect(dto: any) {
     return this.prisma.$transaction(async (tx) => {
+      const requestedUserIds: string[] = Array.isArray(dto.userIds) ? dto.userIds : [];
+      let validUserIds: string[] = [];
+      if (requestedUserIds.length) {
+        const existing = await tx.user.findMany({
+          where: { id: { in: requestedUserIds } },
+          select: { id: true },
+        });
+        validUserIds = existing.map((u) => u.id);
+        if (!validUserIds.length) {
+          throw new BadRequestException('No valid userIds provided');
+        }
+      }
       const notif = await tx.notification.create({
         data: {
           title: dto.title,
@@ -86,13 +99,19 @@ export class NotificationsService {
         },
       });
 
-      if (dto.userIds?.length) {
+      if (validUserIds.length) {
         await tx.notificationRecipient.createMany({
-          data: dto.userIds.map((uid: string) => ({
+          data: validUserIds.map((uid: string) => ({
             notificationId: notif.id,
             userId: uid,
           })),
           skipDuplicates: true,
+        });
+        // Fire-and-forget push send
+        void this.push.sendToUsers(validUserIds, {
+          title: dto.title,
+          body: dto.body,
+          data: dto.data,
         });
       }
 

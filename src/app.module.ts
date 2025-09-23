@@ -16,6 +16,7 @@ import { UsersModule } from './users/users.module';
 import { SubscriptionModule } from './subscription/subscription.module';
 import { MapTilesModule } from './map/map-tiles.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { PushModule } from './push/push.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     SubscriptionModule,
     MapTilesModule,
     NotificationsModule,
+    PushModule,
   ],
   controllers: [AppController],
   providers: [AppService],
