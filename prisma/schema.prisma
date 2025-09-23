@@ -8,25 +8,26 @@ datasource db {
 }
 
 model User {
-  id                 String        @id @default(uuid())
-  email              String?       @unique
-  phoneNumber        String        @unique
+  id                 String                  @id @default(uuid())
+  email              String?                 @unique
+  phoneNumber        String                  @unique
   name               String
   profileImage       String?
   password           String? // For admin login
-  role               Role          @default(BUYER)
-  createdAt          DateTime      @default(now())
-  updatedAt          DateTime      @updatedAt
+  role               Role                    @default(BUYER)
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
   Broker             Broker?
   Buyer              Buyer?
   Developer          Developer?
   Owner              Owner?
   payments           Payment[]
-  projects           Project[]     @relation("DeveloperProjects")
-  brokeredProperties Property[]    @relation("BrokerProperties")
-  ownedProperties    Property[]    @relation("PropertyOwner")
+  projects           Project[]               @relation("DeveloperProjects")
+  brokeredProperties Property[]              @relation("BrokerProperties")
+  ownedProperties    Property[]              @relation("PropertyOwner")
   subscription       Subscription?
   transactions       Transaction[]
+  notifications      NotificationRecipient[]
 
   @@index([phoneNumber])
   @@index([email])
@@ -428,4 +429,33 @@ enum TransactionStatus {
   completed
   failed
   refunded
+}
+
+// Notifications
+model Notification {
+  id         String                  @id @default(uuid())
+  title      String
+  body       String
+  data       Json?
+  category   String?
+  createdAt  DateTime                @default(now())
+  recipients NotificationRecipient[]
+
+  @@index([createdAt])
+}
+
+model NotificationRecipient {
+  id             String    @id @default(uuid())
+  notificationId String
+  userId         String
+  readAt         DateTime?
+  isArchived     Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+
+  notification Notification @relation(fields: [notificationId], references: [id])
+  user         User         @relation(fields: [userId], references: [id])
+
+  @@unique([notificationId, userId])
+  @@index([userId, readAt])
+  @@index([userId, isArchived])
 }

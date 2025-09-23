@@ -15,6 +15,7 @@ import { S3Module } from './s3/s3.module';
 import { UsersModule } from './users/users.module';
 import { SubscriptionModule } from './subscription/subscription.module';
 import { MapTilesModule } from './map/map-tiles.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { MapTilesModule } from './map/map-tiles.module';
     UsersModule,
     SubscriptionModule,
     MapTilesModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

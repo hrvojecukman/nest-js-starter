@@ -338,6 +338,25 @@ async function main() {
     buyer: [],
   };
 
+  // Ensure a known admin exists
+  const adminEmail = 'admin@ousol.com';
+  const knownAdminPasswordHash = await bcrypt.hash('admin123', 12);
+  await prisma.user.upsert({
+    where: { email: adminEmail },
+    update: {
+      role: Role.ADMIN,
+      password: knownAdminPasswordHash,
+      name: 'Admin',
+    },
+    create: {
+      email: adminEmail,
+      phoneNumber: faker.phone.number({ style: 'international' }),
+      name: 'Admin',
+      role: Role.ADMIN,
+      password: knownAdminPasswordHash,
+    },
+  });
+
   // Create admin users
   for (let i = 0; i < config.users.admin; i++) {
     const hashedPassword = await bcrypt.hash('admin123', 12);
@@ -447,6 +466,66 @@ async function main() {
     ],
   });
 
+  // Create mock notifications
+  // Include all users in the database (not only the ones created above)
+  const allUsers = await prisma.user.findMany({ select: { id: true } });
+
+  const categories = [
+    'project_update',
+    'property_alert',
+    'system',
+    'promotion',
+  ];
+
+  const notificationsToCreate = 30;
+  const notificationIds: string[] = [];
+  for (let i = 0; i < notificationsToCreate; i++) {
+    const title = faker.lorem.sentence();
+    const body = faker.lorem.sentences({ min: 1, max: 2 });
+    const category = faker.helpers.arrayElement(categories);
+    const createdAt = faker.date.recent({ days: 30 });
+
+    const notif = await prisma.notification.create({
+      data: {
+        title,
+        body,
+        category,
+        data: { deepLink: `/notifications/${i + 1}` },
+        createdAt,
+      },
+    });
+    notificationIds.push(notif.id);
+
+    // pick random recipients (5 to 30 users)
+    const recipientCount = faker.number.int({ min: 5, max: 30 });
+    const shuffled = faker.helpers.shuffle(allUsers);
+    const recipients = shuffled.slice(0, Math.min(recipientCount, allUsers.length));
+
+    await prisma.notificationRecipient.createMany({
+      data: recipients.map((u) => ({
+        notificationId: notif.id,
+        userId: u.id,
+        ...(faker.datatype.boolean() ? { readAt: faker.date.between({ from: createdAt, to: new Date() }) } : {}),
+      })),
+      skipDuplicates: true,
+    });
+  }
+
+  // Ensure every user has some notifications: attach each user to 3 random notifications
+  for (const u of allUsers) {
+    const picks = faker.helpers.shuffle(notificationIds).slice(0, Math.min(3, notificationIds.length));
+    const now = new Date();
+    await prisma.notificationRecipient.createMany({
+      data: picks.map((nid) => ({
+        notificationId: nid,
+        userId: u.id,
+        ...(faker.datatype.boolean() ? { readAt: faker.date.recent({ days: 10 }) } : {}),
+        createdAt: faker.date.recent({ days: 30 }),
+      })),
+      skipDuplicates: true,
+    });
+  }
+
   console.log('Database has been seeded. 🌱');
   console.log('Created:');
   console.log(`- ${users.admin.length} admin users`);
@@ -458,6 +537,7 @@ async function main() {
   console.log(`- ${users.developer.length * config.projectsPerDeveloper} projects`);
   console.log(`- ${users.developer.length * config.projectsPerDeveloper * 4} project timeline items`);
   console.log('- 5 subscription plans');
+  console.log(`- ${30} notifications`);
 }
 
 main()

@@ -39,7 +39,7 @@ async function bootstrap() {
   app.setGlobalPrefix('api/v1');
 
   // Bind to specific IP address for network access
-  const host = '192.168.100.4';
+  const host = '192.168.100.6';
   // const host = '192.168.1.115'
   const port = 3000;
   
