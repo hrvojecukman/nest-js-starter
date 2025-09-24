@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
+import { PrismaService } from './prisma/prisma.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -44,6 +45,7 @@ async function bootstrap() {
 
   const port = Number(process.env.PORT) || 8080;
   const host = '0.0.0.0';
+  await app.get(PrismaService).enableShutdownHooks(app);
   await app.listen(port, host);
   console.log(`🚀 Server running on http://localhost:${port}`);
   console.log(`🌐 Server accessible from network on ${host}:${port}`);
