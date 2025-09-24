@@ -17,6 +17,7 @@ import { SubscriptionModule } from './subscription/subscription.module';
 import { MapTilesModule } from './map/map-tiles.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PushModule } from './push/push.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { PushModule } from './push/push.module';
     MapTilesModule,
     NotificationsModule,
     PushModule,
+    HealthModule,
   ],
   controllers: [AppController],
   providers: [AppService],

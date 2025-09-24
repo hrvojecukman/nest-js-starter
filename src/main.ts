@@ -38,14 +38,15 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api/v1');
 
-  // Bind to specific IP address for network access
-  const host = '192.168.100.6';
+  // const host = '192.168.100.6';
   // const host = '192.168.1.115'
-  const port = 3000;
-  
+  // const port = 3000;
+
+  const port = Number(process.env.PORT) || 8080;
+  const host = '0.0.0.0';
   await app.listen(port, host);
-  console.log(`🚀 Server running on http://${host}:${port}`);
+  console.log(`🚀 Server running on http://localhost:${port}`);
   console.log(`🌐 Server accessible from network on ${host}:${port}`);
-  console.log(`📱 API available at http://${host}:${port}/api/v1`);
+  console.log(`📱 API available at http://localhost:${port}/api/v1`);
 }
 bootstrap();
