@@ -1,6 +1,5 @@
 import { PrismaClient, Role, PropertyType, PropertyCategory, UnitStatus, FacingDirection, MediaType, InfrastructureItem, ProjectTimelineType } from '@prisma/client';
 import { faker } from '@faker-js/faker';
-import * as bcrypt from 'bcrypt';
 import { tokenAtLevel } from '../src/utils/s2.util';
 
 const prisma = new PrismaClient();
@@ -309,11 +308,10 @@ const generateProject = (developerId: string) => {
   };
 };
 
-async function main() {
-  // Configuration
+
+async function seedDemo(): Promise<void> {
   const config = {
     users: {
-      admin: 1,
       owner: 10,
       broker: 20,
       developer: 10,
@@ -323,50 +321,17 @@ async function main() {
     projectsPerDeveloper: 20,
   };
 
-  // Create users
   const users: {
-    admin: any[];
     owner: any[];
     broker: any[];
     developer: any[];
     buyer: any[];
   } = {
-    admin: [],
     owner: [],
     broker: [],
     developer: [],
     buyer: [],
   };
-
-  // Ensure a known admin exists
-  const adminEmail = 'admin@ousol.com';
-  const knownAdminPasswordHash = await bcrypt.hash('admin123', 12);
-  await prisma.user.upsert({
-    where: { email: adminEmail },
-    update: {
-      role: Role.ADMIN,
-      password: knownAdminPasswordHash,
-      name: 'Admin',
-    },
-    create: {
-      email: adminEmail,
-      phoneNumber: faker.phone.number({ style: 'international' }),
-      name: 'Admin',
-      role: Role.ADMIN,
-      password: knownAdminPasswordHash,
-    },
-  });
-
-  // Create admin users
-  for (let i = 0; i < config.users.admin; i++) {
-    const hashedPassword = await bcrypt.hash('admin123', 12);
-    users.admin.push(await prisma.user.create({ 
-      data: {
-        ...generateUser(Role.ADMIN),
-        password: hashedPassword,
-      }
-    }));
-  }
 
   // Create owner users
   for (let i = 0; i < config.users.owner; i++) {
@@ -400,83 +365,32 @@ async function main() {
   }
 
   // Create properties inside projects
-  let totalProperties = 0;
   for (const project of projects) {
     const propertiesInProject = faker.number.int({ min: 3, max: 8 });
     for (let i = 0; i < propertiesInProject; i++) {
-      // Use random users with different roles as owners (OWNER, DEVELOPER, BROKER)
       const allPotentialOwners = [...users.owner, ...users.developer, ...users.broker];
       const randomOwner = allPotentialOwners[Math.floor(Math.random() * allPotentialOwners.length)];
       const randomBroker = users.broker[Math.floor(Math.random() * users.broker.length)];
       await prisma.property.create({
         data: generateProperty(randomOwner.id, randomBroker.id, project.id),
       });
-      totalProperties++;
     }
   }
 
   // Create some standalone properties (not in projects)
   const standaloneProperties = 10;
   for (let i = 0; i < standaloneProperties; i++) {
-    // Use random users with different roles as owners (OWNER, DEVELOPER, BROKER)
     const allPotentialOwners = [...users.owner, ...users.developer, ...users.broker];
     const randomOwner = allPotentialOwners[Math.floor(Math.random() * allPotentialOwners.length)];
     const randomBroker = users.broker[Math.floor(Math.random() * users.broker.length)];
     await prisma.property.create({
       data: generateProperty(randomOwner.id, randomBroker.id),
     });
-    totalProperties++;
   }
 
-  // Create subscription plans
-  await prisma.subscriptionPlan.createMany({
-    data: [
-      {
-        name: 'Broker Plan',
-        description: 'Perfect for individual property owners',
-        price: 100,
-        currency: 'USD',
-        availableTo: ['BROKER'],
-        billingPeriod: 'monthly',
-      },
-      {
-        name: 'Developer Plan',
-        description: 'Perfect for individual property owners',
-        price: 100,
-        currency: 'USD',
-        availableTo: ['DEVELOPER'],
-        billingPeriod: 'monthly',
-      },
-      {
-        name: 'Owner Plan',
-        description: 'Perfect for individual property owners',
-        price: 100,
-        currency: 'USD',
-        availableTo: ['OWNER'],
-        billingPeriod: 'monthly',
-      },
-      {
-        name: 'Buyer Plan',
-        description: 'Perfect for individual property owners',
-        price: 100,
-        currency: 'USD',
-        availableTo: ['BUYER'],
-        billingPeriod: 'monthly',
-      },
-    ],
-  });
-
-  // Create mock notifications
-  // Include all users in the database (not only the ones created above)
+  // Notifications (attach to all users)
   const allUsers = await prisma.user.findMany({ select: { id: true } });
-
-  const categories = [
-    'project_update',
-    'property_alert',
-    'system',
-    'promotion',
-  ];
-
+  const categories = ['project_update', 'property_alert', 'system', 'promotion'];
   const notificationsToCreate = 30;
   const notificationIds: string[] = [];
   for (let i = 0; i < notificationsToCreate; i++) {
@@ -484,23 +398,13 @@ async function main() {
     const body = faker.lorem.sentences({ min: 1, max: 2 });
     const category = faker.helpers.arrayElement(categories);
     const createdAt = faker.date.recent({ days: 30 });
-
     const notif = await prisma.notification.create({
-      data: {
-        title,
-        body,
-        category,
-        data: { deepLink: `/notifications/${i + 1}` },
-        createdAt,
-      },
+      data: { title, body, category, data: { deepLink: `/notifications/${i + 1}` }, createdAt },
     });
     notificationIds.push(notif.id);
-
-    // pick random recipients (5 to 30 users)
     const recipientCount = faker.number.int({ min: 5, max: 30 });
     const shuffled = faker.helpers.shuffle(allUsers);
     const recipients = shuffled.slice(0, Math.min(recipientCount, allUsers.length));
-
     await prisma.notificationRecipient.createMany({
       data: recipients.map((u) => ({
         notificationId: notif.id,
@@ -514,7 +418,6 @@ async function main() {
   // Ensure every user has some notifications: attach each user to 3 random notifications
   for (const u of allUsers) {
     const picks = faker.helpers.shuffle(notificationIds).slice(0, Math.min(3, notificationIds.length));
-    const now = new Date();
     await prisma.notificationRecipient.createMany({
       data: picks.map((nid) => ({
         notificationId: nid,
@@ -526,18 +429,29 @@ async function main() {
     });
   }
 
-  console.log('Database has been seeded. 🌱');
+  // eslint-disable-next-line no-console
+  console.log('Demo seed complete.');
   console.log('Created:');
-  console.log(`- ${users.admin.length} admin users`);
   console.log(`- ${users.owner.length} owner users`);
   console.log(`- ${users.broker.length} broker users`);
   console.log(`- ${users.developer.length} developer users`);
   console.log(`- ${users.buyer.length} buyer users`);
-  console.log(`- ${totalProperties} properties`);
-  console.log(`- ${users.developer.length * config.projectsPerDeveloper} projects`);
-  console.log(`- ${users.developer.length * config.projectsPerDeveloper * 4} project timeline items`);
-  console.log('- 5 subscription plans');
-  console.log(`- ${30} notifications`);
+  console.log(`- ${projects.length} projects`);
+  console.log(`- ${standaloneProperties} standalone properties`);
+  console.log(`- ${notificationsToCreate} notifications`);
+}
+
+async function main(): Promise<void> {
+  const seedMode = process.env.SEED_MODE ?? 'baseline'; // 'baseline' | 'demo'
+
+  if (seedMode === 'demo') {
+    // eslint-disable-next-line no-console
+    console.log('Running DEMO seed (heavy fake data)...');
+    await seedDemo();
+  } else {
+    // eslint-disable-next-line no-console
+    console.log('Not running any seed.s');
+  }
 }
 
 main()
