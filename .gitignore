@@ -58,3 +58,6 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 # Firebase service account
 firebase-service-account.json
 add_secrets.sh
+add_secrets_to_container.sh
+
+dev_ops_guides

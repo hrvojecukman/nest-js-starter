@@ -18,6 +18,7 @@ import { MapTilesModule } from './map/map-tiles.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PushModule } from './push/push.module';
 import { HealthModule } from './health/health.module';
+import { SeedModule } from './seed/seed.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { HealthModule } from './health/health.module';
     NotificationsModule,
     PushModule,
     HealthModule,
+    SeedModule,
   ],
   controllers: [AppController],
   providers: [AppService],
